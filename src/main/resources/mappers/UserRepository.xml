@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper namespace="com.grape.user.repository.IUserRepository">
+
+    <insert id="insertUser" parameterType="com.grape.user.model.UserDto">
+        INSERT INTO TB_USER_MST (
+            USER_KEY,
+            USER_ID,
+            USER_PW,
+            USER_EMAIL,
+            USER_NAME,
+            USER_RRM,
+            PHONE_NUMBER,
+            SOCIAL_LOGIN_YN,
+            SOCIAL_PROVIDER,
+            SOCIAL_PROVIDER_KEY,
+            USER_NICKNAME,
+            USER_PROFILE_SEQ,
+            SIGNUP_DT,
+            USER_INFO_UPDATE_DT,
+            LAST_LOGIN_DT,
+            PW_FAIL_COUNT,
+            USER_STATUS,
+            LAST_STATUS_CHANGED_DT,
+            USER_STATUS_CONTENT,
+            LOGIN_TRY_COUNT,
+            LOGIN_AUTH,
+            ADMIN_YN,
+            WARN_COUNT,
+            BAN_COUNT
+        ) VALUES (
+            #{userKey},
+            #{userId},
+            #{userPw},
+            #{userEmail},
+            #{userName},
+            '',
+            '',
+            'N',
+            '',
+            '',
+            #{userNickname},
+            #{userProfileSeq},
+            NOW(),
+            '',
+            '',
+            0,
+            #{userStatus},
+            '',
+            '',
+            '',
+            '',
+            #{adminYn},
+            0,
+            0
+        )
+    </insert>
+
+    <select id="selectUserId" parameterType="String" resultType="int">
+        SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_ID = #{userId})
+    </select>
+
+    <select id="selectUserNickname" parameterType="String" resultType="int">
+        SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_NICKNAME = #{userNickname})
+    </select>
+
+    <select id="selectUserEmail" parameterType="String" resultType="int">
+        SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_EMAIL = #{userEmail})
+    </select>
+</mapper>
