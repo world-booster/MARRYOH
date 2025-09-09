@@ -42,6 +42,8 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
     /*2025.09.08 유효성 검사 의존성 추가*/
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    /*2025.09.09 bcrypt암호화를 위해 보안 의존성 추가*/
+    implementation 'org.springframework.boot:spring-boot-starter-security'
 }
 
 tasks.named('test') {

@@ -1,6 +1,6 @@
-package com.grape.user.repository;
+package com.grape.module.user.repository;
 
-import com.grape.user.model.UserDto;
+import com.grape.module.user.model.UserDto;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
@@ -16,4 +16,5 @@ public interface IUserRepository {
     boolean selectUserId(String userId);
     boolean selectUserNickname(String userNickname);
     boolean selectUserEmail(String userEmail);
+    boolean selectUserKey(String userKey);
 }
