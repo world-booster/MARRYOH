@@ -1,6 +1,6 @@
-package com.grape.user.service;
+package com.grape.module.user.service;
 
-import com.grape.user.model.UserDto;
+import com.grape.module.user.model.UserDto;
 
 public interface IUserService {
 
@@ -16,4 +16,5 @@ public interface IUserService {
     boolean isUserIdExist(String userId);
     boolean isUserNicknameExist(String userNickname);
     boolean isUserEmailExist(String userEmail);
+    boolean isUserKeyExist(String userKey);
 }

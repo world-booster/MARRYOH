@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mapper namespace="com.grape.user.repository.IUserRepository">
+<mapper namespace="com.grape.module.user.repository.IUserRepository">
 
-    <insert id="insertUser" parameterType="com.grape.user.model.UserDto">
+    <insert id="insertUser" parameterType="com.grape.module.user.model.UserDto">
         INSERT INTO TB_USER_MST (
             USER_KEY,
             USER_ID,
@@ -33,22 +33,22 @@
             #{userPw},
             #{userEmail},
             #{userName},
-            '',
-            '',
-            'N',
-            '',
-            '',
+            #{userRrm},
+            #{phoneNumber},
+            #{socialLoginYn},
+            #{socialProvider},
+            #{socialProviderKey},
             #{userNickname},
             #{userProfileSeq},
-            NOW(),
-            '',
-            '',
+            #{signupDt},
+            #{userInfoUpdateDt},
+            #{lastLoginDt},
             0,
-            #{userStatus},
-            '',
-            '',
-            '',
-            '',
+            'S',
+            #{lastStatusChangedDt},
+            #{userStatusContent},
+            0,
+            #{loginAuth},
             #{adminYn},
             0,
             0
@@ -65,5 +65,9 @@
 
     <select id="selectUserEmail" parameterType="String" resultType="int">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_EMAIL = #{userEmail})
+    </select>
+
+    <select id="selectUserKey" parameterType="String" resultType="int">
+        SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_KEY = #{userKey})
     </select>
 </mapper>

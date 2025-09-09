@@ -10,7 +10,11 @@ public class DateFormat {
         private static final DateTimeFormatter FORMATTER
                 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-        public String getNow() {
+        public LocalDateTime getNow() {
+            return LocalDateTime.now();
+        }
+
+        public String getNowFormat() {
             return LocalDateTime.now().format(FORMATTER);
         }
 }

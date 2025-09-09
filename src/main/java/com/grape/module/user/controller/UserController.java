@@ -1,7 +1,7 @@
-package com.grape.user.controller;
+package com.grape.module.user.controller;
 
-import com.grape.user.model.UserDto;
-import com.grape.user.service.UserService;
+import com.grape.module.user.model.UserDto;
+import com.grape.module.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
