@@ -20,7 +20,7 @@
         </RollingFile>
     </Appenders>
     <Loggers>
-        <Root level="info">
+        <Root level="info"> <!--운영할땐 info / 개발 debug-->
             <AppenderRef ref="ConsoleAppender"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Root>
