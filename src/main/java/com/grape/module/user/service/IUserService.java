@@ -13,8 +13,8 @@ public interface IUserService {
     * 값 검증 로직 포함(글자 수, 제한 조건, 필수 조건)
     *  */
     int signup(UserDto user);
-    boolean isUserIdExist(String userId);
-    boolean isUserNicknameExist(String userNickname);
-    boolean isUserEmailExist(String userEmail);
-    boolean isUserKeyExist(String userKey);
+    int isUserIdExist(String userId);
+    int isUserNicknameExist(String userNickname);
+    int isUserEmailExist(String userEmail);
+    int isUserKeyExist(String userKey);
 }

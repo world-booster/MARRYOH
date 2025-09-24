@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.grape.module.user.repository.IUserRepository">
 
     <insert id="insertUser" parameterType="com.grape.module.user.model.UserDto">
@@ -18,28 +20,28 @@
             SIGNUP_DT,
             USER_INFO_UPDATE_DT,
             LAST_LOGIN_DT,
-            PW_FAIL_COUNT,
+            PW_FAIL_CNT,
             USER_STATUS,
             LAST_STATUS_CHANGED_DT,
             USER_STATUS_CONTENT,
-            LOGIN_TRY_COUNT,
+            LOGIN_TRY_CNT,
             LOGIN_AUTH,
             ADMIN_YN,
-            WARN_COUNT,
-            BAN_COUNT
+            WARN_CNT,
+            BAN_CNT
         ) VALUES (
             #{userKey},
             #{userId},
             #{userPw},
             #{userEmail},
             #{userName},
-            #{userRrm},
+            #{userRRM},
             #{phoneNumber},
             #{socialLoginYn},
             #{socialProvider},
             #{socialProviderKey},
             #{userNickname},
-            #{userProfileSeq},
+            0,
             #{signupDt},
             #{userInfoUpdateDt},
             #{lastLoginDt},

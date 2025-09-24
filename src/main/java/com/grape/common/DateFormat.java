@@ -1,10 +1,13 @@
 package com.grape.common;
 
 import lombok.Getter;
+import org.springframework.stereotype.Component;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Getter
+@Component
 public class DateFormat {
 
         private static final DateTimeFormatter FORMATTER
