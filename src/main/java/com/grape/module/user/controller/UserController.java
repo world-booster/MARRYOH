@@ -2,11 +2,11 @@ package com.grape.module.user.controller;
 
 import com.grape.module.user.model.UserDto;
 import com.grape.module.user.service.UserService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.bind.annotation.*;
 
 /*
 * 유저 상태 및 정보관련 CRUD 서비스 매핑
@@ -22,17 +22,17 @@ public class UserController {
     @PostMapping("/verificator-id")
     public String verificateId(@RequestBody UserDto user){
 
-        if(userService.isUserIdExist(user.getUserId())){
+        if(userService.isUserIdExist(user.getUserId()) == 1){
             return "fail";
         }else{
             return "success";
         }
     }
 
-    @PostMapping("/verificator-id")
+    @PostMapping("/verificator-nickname")
     public String verificateNickname(@RequestBody UserDto user){
 
-        if(userService.isUserNicknameExist(user.getUserNickname())){
+        if(userService.isUserNicknameExist(user.getUserNickname()) == 1){
             return "fail";
         }else{
             return "success";
@@ -43,7 +43,7 @@ public class UserController {
     @PostMapping("/signup")
     public String signup(@RequestBody UserDto user){
 
-        if(userService.isUserEmailExist(user.getUserEmail())){
+        if(userService.isUserEmailExist(user.getUserEmail()) == 1){
             return "이미 존재하는 이메일 입니다.";
         }
 
@@ -53,5 +53,10 @@ public class UserController {
         }else{
             return "fail";
         }
+    }
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "hello";
     }
 }
