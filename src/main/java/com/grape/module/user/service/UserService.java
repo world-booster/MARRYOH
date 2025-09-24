@@ -1,6 +1,7 @@
 package com.grape.module.user.service;
 
 import com.grape.common.DateFormat;
+import com.grape.common.Validator;
 import com.grape.module.user.model.UserDto;
 import com.grape.module.user.repository.IUserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,17 +17,18 @@ public class UserService implements IUserService{
     private final IUserRepository  userRepository;
     private final PasswordEncoder passwordEncoder;
     private final DateFormat dateFormat;
+    private final Validator validator;
 
     @Override
     public int signup(UserDto user) {
 
         /* 유저키 생성 */
         String userKey = UUID.randomUUID().toString();
-        while (!isUserKeyExist(userKey)) {
+        while (isUserKeyExist(userKey) == 1) {
             userKey = UUID.randomUUID().toString();
         }
-
-        /* 회원관리 미입력 검증 및 회원정보 초기화 */
+        user.setUserKey(userKey);
+        /* 회원정보 미입력 검증 및 초기화 */
         if(user.getUserId() == null){
             return 0;
         } else if (user.getUserPw() == null) {
@@ -45,6 +47,11 @@ public class UserService implements IUserService{
             user.setAdminYn("N");
         }
 
+        /* 입력정보 유효성 검증 */
+        if(!validator.isTextValid(user.getUserId(),5,20,false, false, false, false)) return 1;
+        if(!validator.isTextValid(user.getUserPw(), 7, 10, true, true, true, true)) return 1;
+        if(!validator.isTextValid(user.getUserNickname(), 2, 10, false, false, false, false)) return 1;
+
         /* 비밀번호 bcrypt 암호화 */
         String encodedPw = passwordEncoder.encode(user.getUserPw());
         user.setUserPw(encodedPw);
@@ -53,22 +60,22 @@ public class UserService implements IUserService{
     }
 
     @Override
-    public boolean isUserIdExist(String userId) {
+    public int isUserIdExist(String userId) {
         return userRepository.selectUserId(userId);
     }
 
     @Override
-    public boolean isUserNicknameExist(String userNickname) {
+    public int isUserNicknameExist(String userNickname) {
         return userRepository.selectUserNickname(userNickname);
     }
 
     @Override
-    public boolean isUserEmailExist(String userEmail) {
+    public int isUserEmailExist(String userEmail) {
         return userRepository.selectUserEmail(userEmail);
     }
 
     @Override
-    public boolean isUserKeyExist(String userKey) {
+    public int isUserKeyExist(String userKey) {
         return userRepository.selectUserKey(userKey);
     }
 
