@@ -11,10 +11,6 @@ import org.springframework.security.web.SecurityFilterChain;
 /* 비밀 번호 인코더 */
 @Configuration
 public class SecurityConfig {
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
