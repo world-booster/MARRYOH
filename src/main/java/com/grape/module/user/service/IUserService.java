@@ -12,9 +12,6 @@ public interface IUserService {
     * ****************[추가]*******************
     * 값 검증 로직 포함(글자 수, 제한 조건, 필수 조건)
     *  */
-    int signup(UserDto user);
-    int isUserIdExist(String userId);
-    int isUserNicknameExist(String userNickname);
-    int isUserEmailExist(String userEmail);
-    int isUserKeyExist(String userKey);
+    int signup(UserDto user) throws Exception;
+    int checkUserInfo(String userInfo, String userInfoType);
 }
