@@ -57,6 +57,10 @@
         )
     </insert>
 
+    <select id="selectUserPw" parameterType="String" resultType="String">
+        SELECT USER_PW FROM TB_USER_MST WHERE USER_ID = #{userId}
+    </select>
+
     <select id="selectUserId" parameterType="String" resultType="int">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_ID = #{userId})
     </select>
