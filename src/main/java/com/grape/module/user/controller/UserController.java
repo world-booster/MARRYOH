@@ -92,4 +92,34 @@ public class UserController {
         response.put("message","success");
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/find-id")
+    public String findId(@RequestBody String token){
+        return "id";
+    }
+
+    @PostMapping("/find-pw")
+    public ResponseEntity<Map<String,String>> findPw(@RequestBody UserDto user){
+        Map<String,String> response = new HashMap<>();
+        response.put("message","success");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/signin")
+    public ResponseEntity<Map<String,String>> signin(@RequestBody UserDto user){
+        Map<String,String> response = new HashMap<>();
+        try{
+            if(userService.signin(user) == 1){
+                response.put("message","success");
+                return ResponseEntity.ok(response);
+            }else{
+                response.put("error","로그인 실패");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+            }
+        }catch (Exception e){
+            response.put("error", "원인 미지정 에러");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
 }

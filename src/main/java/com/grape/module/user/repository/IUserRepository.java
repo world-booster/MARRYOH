@@ -13,8 +13,10 @@ public interface IUserRepository {
     * 2. boolean : return 1(성공) or 0 (실패)
     * */
     int insertUser(UserDto user);
+    String selectUserPw(String userId);
     int selectUserId(String userId);
     int selectUserNickname(String userNickname);
     int selectUserEmail(String userEmail);
     int selectUserKey(String userKey);
+
 }
