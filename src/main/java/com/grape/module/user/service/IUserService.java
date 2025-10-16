@@ -1,6 +1,7 @@
 package com.grape.module.user.service;
 
 import com.grape.module.user.model.UserDto;
+import com.grape.module.user.model.UserFindingInfoDto;
 
 public interface IUserService {
 
@@ -13,5 +14,7 @@ public interface IUserService {
     * 값 검증 로직 포함(글자 수, 제한 조건, 필수 조건)
     *  */
     int signup(UserDto user) throws Exception;
+    int signin(UserDto user);
     int checkUserInfo(String userInfo, String userInfoType);
+    String findUserInfo(UserFindingInfoDto userFindingInfo, String userFindingInfoType);
 }
