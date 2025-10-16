@@ -3,7 +3,9 @@ package com.grape.module.user.service;
 import com.fasterxml.uuid.Generators;
 import com.grape.common.DateFormat;
 import com.grape.common.Validator;
+import com.grape.module.auth.service.IAuthService;
 import com.grape.module.user.model.UserDto;
+import com.grape.module.user.model.UserFindingInfoDto;
 import com.grape.module.user.repository.IUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -26,12 +28,15 @@ public class UserService implements IUserService{
     private final PasswordEncoder passwordEncoder;
     private final DateFormat dateFormat;
     private final Validator validator;
+    private final IAuthService authService;
 
     @Override
     public int signup(UserDto user) throws Exception{
         try {
             /* 유저키 생성 */
             user.setUserKey(generateUuidV7());
+            /* 유저키 생성이후 토큰 생성 및 저장 */
+            if(authService.createRefreshToken(user.getUserKey()) == 0) return 0;
             /* 회원정보 미입력 검증 및 초기화 */
             initializeInfo(user);
             /* 입력정보 유효성 최종 검증 */
@@ -58,6 +63,34 @@ public class UserService implements IUserService{
             logger.info("UserService/signup(UserDto user)/DataAccessException");
             throw dae;
         }catch (Exception e){
+            throw e;
+        }
+    }
+
+    @Override
+    public int signin(UserDto user){
+        try{
+            if(checkUserInfo(user.getUserId(), "id") == 0){
+                logger.info("로그인 실패: 사용자 없음 - id : "+user.getUserId());
+                return 0;
+            }
+
+            String encodedPassword = userRepository.selectUserPw(user.getUserId());
+            if(encodedPassword == null){
+                logger.info("로그인 실패: 암호화된 비밀번호 없음 - id : "+user.getUserId());
+                return 0;
+            }
+
+            boolean login = passwordEncoder.matches(user.getUserPw(), encodedPassword);
+            if(login){
+                logger.info("로그인 성공");
+                return 1;
+            } else{
+                logger.info("로그인 실패: 비밀번호 불일치 - id : "+user.getUserId());
+                return 0;
+            }
+
+        } catch(Exception e){
             throw e;
         }
     }
@@ -94,6 +127,7 @@ public class UserService implements IUserService{
         }
     }
 
+
     /* uuid-v7(유저키) 등록 메서드 */
     public String generateUuidV7(){
         String uuidV7 = Generators.timeBasedEpochGenerator().generate().toString();
@@ -115,5 +149,14 @@ public class UserService implements IUserService{
             user.setAdminYn("N");
         }
         return user;
+    }
+
+    /* 회원정보 찾기 및 재설정 함수 */
+    @Override
+    public String findUserInfo(UserFindingInfoDto userFindingInfo, String userFindingInfoType) {
+        if(userFindingInfoType.equals("id")){
+            //이메일 인증 토큰 필요
+        }
+        return "";
     }
 }
