@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.grape.module.auth.repository.IAuthRepository">
+
+    <insert id="insertToken" parameterType="com.grape.module.auth.model.AuthDto">
+        INSERT INTO TB_TOKEN_SEC (
+            TOKEN_KEY,
+            USER_KEY,
+            TOKEN,
+            TOKEN_START_DT,
+            TOKEN_END_DT
+        ) VALUES (
+            #{tokenKey},
+            #{userKey},
+            #{token},
+            current_timestamp(),
+            DATE_ADD(current_timestamp(), INTERVAL 3 YEAR)
+        )
+    </insert>
+
+    <select id="selectUserToken" parameterType="String" resultType="int">
+        SELECT EXISTS (SELECT 1 FROM TB_TOKEN_SEC WHERE USER_KEY = #{userKey})
+    </select>
+</mapper>
