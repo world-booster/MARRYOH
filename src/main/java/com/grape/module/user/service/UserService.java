@@ -129,7 +129,7 @@ public class UserService implements IUserService{
 
 
     /* uuid-v7(유저키) 등록 메서드 */
-    public String generateUuidV7(){
+    private String generateUuidV7(){
         String uuidV7 = Generators.timeBasedEpochGenerator().generate().toString();
         while (checkUserInfo(uuidV7,"userKey") == 1) {
             uuidV7 = Generators.timeBasedEpochGenerator().generate().toString();
@@ -138,7 +138,7 @@ public class UserService implements IUserService{
     }
 
     /* 회원정보 초기화 함수 */
-    public UserDto initializeInfo(UserDto user){
+    private UserDto initializeInfo(UserDto user){
         if (user.getSocialLoginYn() == null || !user.getSocialLoginYn().equals("Y")) {
             user.setSocialLoginYn("N");
         } else if (user.getSignupDt() == null) {
