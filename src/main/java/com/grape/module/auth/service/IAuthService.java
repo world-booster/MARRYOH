@@ -16,6 +16,7 @@ public interface IAuthService {
      *  */
 
     int createRefreshToken(String userKey);
+    String selectRefreshToken(String userKey);
     String createTempToken(String userKey);
     String jwtTokenGenerator(String userKey);
     int checkUserToken(String userKey);

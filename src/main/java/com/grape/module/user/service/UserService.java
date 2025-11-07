@@ -3,7 +3,10 @@ package com.grape.module.user.service;
 import com.fasterxml.uuid.Generators;
 import com.grape.common.DateFormat;
 import com.grape.common.Validator;
+import com.grape.module.auth.model.TokenDto;
 import com.grape.module.auth.service.IAuthService;
+import com.grape.module.user.model.FindIdDto;
+import com.grape.module.user.model.LoginDto;
 import com.grape.module.user.model.UserDto;
 import com.grape.module.user.model.UserFindingInfoDto;
 import com.grape.module.user.repository.IUserRepository;
@@ -33,23 +36,16 @@ public class UserService implements IUserService{
     @Override
     public int signup(UserDto user) throws Exception{
         try {
-            /* 유저키 생성 */
             user.setUserKey(generateUuidV7());
             /* 유저키 생성이후 토큰 생성 및 저장 */
-            if(authService.createRefreshToken(user.getUserKey()) == 0) return 0;
-            /* 회원정보 미입력 검증 및 초기화 */
+            if(authService.createRefreshToken(user.getUserKey()) == 0){
+                return 0;
+            }
             initializeInfo(user);
-            /* 입력정보 유효성 최종 검증 */
-            if (checkUserInfo(user.getUserId(), "id") == 0) {
-                return 0;
-            }
-            if (checkUserInfo(user.getUserPw(), "pw") == 0) {
-                return 0;
-            }
-            if (checkUserInfo(user.getUserNickname(), "nickname") == 0) {
-                return 0;
-            }
-            if (checkUserInfo(user.getUserEmail(), "email") == 0) {
+            if(!checkUserInfo(user.getUserId(), "id") ||
+                    !checkUserInfo(user.getUserPw(), "pw") ||
+                    !checkUserInfo(user.getUserNickname(), "nickname") ||
+                    !checkUserInfo(user.getUserEmail(), "email")){
                 return 0;
             }
             /* 비밀번호 bcrypt 암호화 */
@@ -68,70 +64,93 @@ public class UserService implements IUserService{
     }
 
     @Override
-    public int signin(UserDto user){
+    public TokenDto signin(LoginDto loginDto){
         try{
-            if(checkUserInfo(user.getUserId(), "id") == 0){
-                logger.info("로그인 실패: 사용자 없음 - id : "+user.getUserId());
-                return 0;
+            if(loginDto.getUserId() == null || loginDto.getPassword() == null ||
+                    loginDto.getUserId().trim().isEmpty() || loginDto.getPassword().trim().isEmpty()){
+                throw new RuntimeException("회원정보가 존재하지 않습니다");
             }
+            UserDto user = userRepository.selectUser(loginDto.getUserId())
+                    .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
 
             String encodedPassword = userRepository.selectUserPw(user.getUserId());
             if(encodedPassword == null){
                 logger.info("로그인 실패: 암호화된 비밀번호 없음 - id : "+user.getUserId());
-                return 0;
+                throw new RuntimeException("암호화된 비밀번호가 존재하지 않습니다.");
             }
 
-            boolean login = passwordEncoder.matches(user.getUserPw(), encodedPassword);
-            if(login){
-                logger.info("로그인 성공");
-                return 1;
-            } else{
-                logger.info("로그인 실패: 비밀번호 불일치 - id : "+user.getUserId());
-                return 0;
-            }
+            logger.info("로그인 성공: "+ loginDto.getUserId());
 
+            int refreshResult = authService.createRefreshToken(user.getUserKey());
+            if(refreshResult == 0) {
+                throw new RuntimeException("리프레시 토큰 발급 실패 또는 이미 존재합니다.");
+            }
+            String refreshToken = authService.selectRefreshToken(user.getUserKey());
+
+            //access 토큰 발급
+            String accessToken = authService.jwtTokenGenerator(user.getUserKey());
+
+            return new TokenDto(accessToken, refreshToken);
         } catch(Exception e){
+            logger.error("로그인 에러: " + e.getMessage());
             throw e;
         }
     }
+
+    @Override
+    public String findId(FindIdDto findIdDto) {
+        if(!checkUserInfo(findIdDto.getEmail(), "email")){
+            throw new RuntimeException("존재하지 않는 이메일 입니다.");
+        }
+        String userId = userRepository.selectUserId(findIdDto.getEmail())
+                .orElseThrow(() -> new RuntimeException("해당 유저아이디 정보가 존재하지 않습니다"));
+        return userId;
+    }
+
 
     /*
     *  유효성 검증 메서드
     *  중복 체크, 글자 수 제한, 특수문자 허용 체크, 최소 포함 조건
     *  */
     @Override
-    public int checkUserInfo(String userInfo, String userInfoType){
+    public boolean checkUserInfo(String userInfo, String userInfoType){
         try{
-            if(userInfo == null) return 0;
-            if(userInfoType.equals("id")){
-                if(!validator.isTextValid(userInfo,5,20,false, false, false, false)) return 1;
-                return userRepository.selectUserId(userInfo);
-            } else if (userInfoType.equals("nickname")) {
-                if(!validator.isTextValid(userInfo, 2, 10, false, false, false, false)) return 1;
-                return userRepository.selectUserNickname(userInfo);
-            } else if (userInfoType.equals("email")) {
-                return userRepository.selectUserEmail(userInfo);
-            } else if (userInfoType.equals("pw")) {
-                if(!validator.isTextValid(userInfo, 7, 10, true, true, true, true)) return 1;
-                return 1;
-            } else if (userInfoType.equals("userKey")) {
-                return userRepository.selectUserKey(userInfo);
-            } else {
-                return 0;
+            if(userInfo == null) return false;
+            switch (userInfoType) {
+                case "id" -> {
+                    return validator.isTextValid(userInfo, 5, 20, false, false, false, false) && userRepository.existUserId(userInfo);
+                }
+                case "nickname" -> {
+                    return validator.isTextValid(userInfo, 2, 10, false, false, false, false) && userRepository.existUserNickname(userInfo);
+                }
+                case "email" -> {
+                    return userRepository.existUserEmail(userInfo);
+                }
+                case "pw" -> {
+                    return validator.isTextValid(userInfo, 7, 10, true, true, true, true);
+                }
+                case "userKey" -> {
+                    return userRepository.existUserKey(userInfo);
+                }
+                default -> {
+                    return false;
+                }
             }
         }catch (NullPointerException npe){
             logger.info("UserService/checkUserInfo/nullpointerException");
-            return 0;
+            return false;
         }catch (Exception e){
             throw e;
         }
     }
 
 
-    /* uuid-v7(유저키) 등록 메서드 */
+    /*
+    * uuid-v7 Unix Expoch 시간 기반으로 기존 v4, v1의 단점을 보완해 분산시스템에서 효율적이고 안전한 식별자 생성가능
+    *  */
     private String generateUuidV7(){
         String uuidV7 = Generators.timeBasedEpochGenerator().generate().toString();
-        while (checkUserInfo(uuidV7,"userKey") == 1) {
+        while (checkUserInfo(uuidV7,"userKey")) {
             uuidV7 = Generators.timeBasedEpochGenerator().generate().toString();
         }
         return uuidV7;

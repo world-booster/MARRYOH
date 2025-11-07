@@ -38,24 +38,19 @@ public class UserDto {
     @NotBlank
     private String userNickname;
     private int userProfileSeq;
-    @NotBlank
     private LocalDateTime signupDt;
     private LocalDateTime userInfoUpdateDt;
     private LocalDateTime lastLoginDt;
-    @NotBlank
     private int pwFailCount;
     @NotBlank
     private String userStatus;
     private LocalDateTime lastStatusChangedDt;
     private String userStatusContent;
-    @NotBlank
     private int loginTryCount;
     @NotBlank
     private String loginAuth;
     @NotBlank
     private String adminYn;
-    @NotBlank
     private int warnCount;
-    @NotBlank
     private int banCount;
 }

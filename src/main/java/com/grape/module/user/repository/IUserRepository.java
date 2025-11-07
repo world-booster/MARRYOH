@@ -2,6 +2,9 @@ package com.grape.module.user.repository;
 
 import com.grape.module.user.model.UserDto;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.Optional;
 
 @Mapper
 public interface IUserRepository {
@@ -14,9 +17,10 @@ public interface IUserRepository {
     * */
     int insertUser(UserDto user);
     String selectUserPw(String userId);
-    int selectUserId(String userId);
-    int selectUserNickname(String userNickname);
-    int selectUserEmail(String userEmail);
-    int selectUserKey(String userKey);
-
+    boolean existUserId(String userId);
+    boolean existUserNickname(String userNickname);
+    boolean existUserEmail(String userEmail);
+    boolean existUserKey(String userKey);
+    Optional<UserDto> selectUser(@Param("userId") String userId);
+    Optional<String> selectUserId(@Param("email") String email);
 }

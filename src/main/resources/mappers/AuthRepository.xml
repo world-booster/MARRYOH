@@ -19,7 +19,11 @@
         )
     </insert>
 
-    <select id="selectUserToken" parameterType="String" resultType="int">
+    <select id="existUserToken" parameterType="String" resultType="int">
         SELECT EXISTS (SELECT 1 FROM TB_TOKEN_SEC WHERE USER_KEY = #{userKey})
+    </select>
+
+    <select id="selectRefreshToken" parameterType="String" resultType="String">
+        SELECT TOKEN FROM TB_TOKEN_SEC WHERE USER_KEY = #{userKey}
     </select>
 </mapper>
