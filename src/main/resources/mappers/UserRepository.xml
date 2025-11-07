@@ -61,19 +61,56 @@
         SELECT USER_PW FROM TB_USER_MST WHERE USER_ID = #{userId}
     </select>
 
-    <select id="selectUserId" parameterType="String" resultType="int">
+    <select id="selectUserId" parameterType="String" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_ID = #{userId})
     </select>
 
-    <select id="selectUserNickname" parameterType="String" resultType="int">
+    <select id="selectUserNickname" parameterType="String" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_NICKNAME = #{userNickname})
     </select>
 
-    <select id="selectUserEmail" parameterType="String" resultType="int">
+    <select id="selectUserEmail" parameterType="String" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_EMAIL = #{userEmail})
     </select>
 
-    <select id="selectUserKey" parameterType="String" resultType="int">
+    <select id="selectUserKey" parameterType="String" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_KEY = #{userKey})
+    </select>
+
+    <select id="selectUser" parameterType="String" resultType="com.grape.module.user.model.UserDto">
+        SELECT
+            USER_KEY,
+            USER_ID,
+            USER_PW,
+            USER_EMAIL,
+            USER_NAME,
+            USER_RRM,
+            PHONE_NUMBER,
+            SOCIAL_LOGIN_YN,
+            SOCIAL_PROVIDER,
+            SOCIAL_PROVIDER_KEY,
+            USER_NICKNAME,
+            USER_PROFILE_SEQ,
+            SIGNUP_DT,
+            USER_INFO_UPDATE_DT,
+            LAST_LOGIN_DT,
+            PW_FAIL_CNT AS pwFailCount,
+            USER_STATUS,
+            LAST_STATUS_CHANGED_DT,
+            USER_STATUS_CONTENT,
+            LOGIN_TRY_CNT AS loginTryCount,
+            LOGIN_AUTH,
+            ADMIN_YN,
+            WARN_CNT AS warnCount,
+            BAN_CNT AS banCount
+        FROM TB_USER_MST
+        WHERE USER_ID = #{userId}
+    </select>
+
+    <select id="selectUserId" parameterType="String" resultType="String">
+        SELECT
+             USER_ID,
+        FROM TB_USER_MST
+        WHERE USER_EMAIL = #{email}
     </select>
 </mapper>

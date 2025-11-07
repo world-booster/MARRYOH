@@ -42,6 +42,14 @@ public class AuthService implements IAuthService{
     }
 
     @Override
+    public String selectRefreshToken(String userKey) {
+        if(userKey == null){
+            throw new IllegalArgumentException("유저키가 존재하지 않습니다.");
+        }
+        return authRepository.selectRefreshToken(userKey);
+    }
+
+    @Override
     public String createTempToken(String userKey) {
         long expiration = 5 * 20 * 1000; //5분 TTL
 
@@ -70,7 +78,7 @@ public class AuthService implements IAuthService{
     public int checkUserToken(String userKey) {
         try{
             if(userKey == null) return 0;
-            return authRepository.selectUserToken(userKey);
+            return authRepository.existUserToken(userKey);
         }catch (Exception e){
             throw e; //임시 exception 핸들링
         }
