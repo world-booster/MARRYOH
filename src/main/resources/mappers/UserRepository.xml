@@ -113,4 +113,11 @@
         FROM TB_USER_MST
         WHERE USER_EMAIL = #{email}
     </select>
+
+    <update id="updateUserPassword" parameterType="com.grape.module.user.model.UserDto">
+        UPDATE TB_USER_MST
+        SET USER_PW = #{userPw},
+            USER_INFO_UPDATE_DT = NOW()
+        WHERE USER_KEY = #{userKey}
+    </update>
 </mapper>

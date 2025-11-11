@@ -3,6 +3,7 @@ package com.grape.module.user.controller;
 import com.grape.module.auth.model.TokenDto;
 import com.grape.module.user.model.FindIdDto;
 import com.grape.module.user.model.LoginDto;
+import com.grape.module.user.model.ResetPwDto;
 import com.grape.module.user.model.UserDto;
 import com.grape.module.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -88,14 +89,32 @@ public class UserController {
     @PostMapping("/find-id")
     public ResponseEntity<Map<String,String>> findId(@RequestBody FindIdDto findIdDto){
         Map<String,String> response = new HashMap<>();
-        String userId = userService.findId(findIdDto);
-        response.put("userId",userId);
+        try{
+            String userId = userService.findId(findIdDto);
+            String maskedUserId = userId.substring(0,4) + "*".repeat(userId.length() - 4);
+            response.put("maskedUserId",maskedUserId);
+        }catch (Exception e){
+            response.put("error", "원인 미지정 에러");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/find-pw")
-    public ResponseEntity<Map<String,String>> findPw(@RequestBody UserDto user){
+    @PostMapping("/reset-pw/logout")
+    public ResponseEntity<Map<String,String>> findPw(@RequestBody ResetPwDto resetPwDto){
         Map<String,String> response = new HashMap<>();
+        try {
+            if(userService.resetPassword(resetPwDto) != 1){
+                response.put("error", "가입 실패");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+        }catch (HttpMessageNotReadableException e){
+            response.put("error", "요청 파일 read 에러");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }catch (Exception e){
+            response.put("error", "원인 미지정 에러");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
         response.put("message","success");
         return ResponseEntity.ok(response);
     }
