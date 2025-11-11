@@ -1,10 +1,7 @@
 package com.grape.module.user.service;
 
 import com.grape.module.auth.model.TokenDto;
-import com.grape.module.user.model.FindIdDto;
-import com.grape.module.user.model.LoginDto;
-import com.grape.module.user.model.UserDto;
-import com.grape.module.user.model.UserFindingInfoDto;
+import com.grape.module.user.model.*;
 
 public interface IUserService {
 
@@ -19,6 +16,7 @@ public interface IUserService {
     int signup(UserDto user) throws Exception;
     TokenDto signin(LoginDto loginDto);
     String findId(FindIdDto findIdDto);
+    int resetPassword(ResetPwDto resetPwDto);
     boolean checkUserInfo(String userInfo, String userInfoType);
     String findUserInfo(UserFindingInfoDto userFindingInfo, String userFindingInfoType);
 }

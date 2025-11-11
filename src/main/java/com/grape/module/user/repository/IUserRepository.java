@@ -23,4 +23,5 @@ public interface IUserRepository {
     boolean existUserKey(String userKey);
     Optional<UserDto> selectUser(@Param("userId") String userId);
     Optional<String> selectUserId(@Param("email") String email);
+    int updateUserPassword(UserDto user);
 }

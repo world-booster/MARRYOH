@@ -5,10 +5,7 @@ import com.grape.common.DateFormat;
 import com.grape.common.Validator;
 import com.grape.module.auth.model.TokenDto;
 import com.grape.module.auth.service.IAuthService;
-import com.grape.module.user.model.FindIdDto;
-import com.grape.module.user.model.LoginDto;
-import com.grape.module.user.model.UserDto;
-import com.grape.module.user.model.UserFindingInfoDto;
+import com.grape.module.user.model.*;
 import com.grape.module.user.repository.IUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -105,6 +102,24 @@ public class UserService implements IUserService{
         String userId = userRepository.selectUserId(findIdDto.getEmail())
                 .orElseThrow(() -> new RuntimeException("해당 유저아이디 정보가 존재하지 않습니다"));
         return userId;
+    }
+
+    @Override
+    public int resetPassword(ResetPwDto resetPwDto) {
+        try{
+            if(!resetPwDto.isVerified()){
+                return 0;
+            }
+
+            UserDto user =  userRepository.selectUser(resetPwDto.getUserId())
+                    .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+
+            String encodedPw = passwordEncoder.encode(resetPwDto.getNewPassword());
+            user.setUserPw(encodedPw);
+            return userRepository.updateUserPassword(user);
+        }catch (Exception e){
+            throw e;
+        }
     }
 
 
