@@ -15,6 +15,7 @@ public interface IUserService {
     *  */
     int signup(UserDto user) throws Exception;
     TokenDto signin(LoginDto loginDto);
+    void signout(String refreshToken);
     String findId(FindIdDto findIdDto);
     int resetPassword(ResetPwDto resetPwDto);
     boolean checkUserInfo(String userInfo, String userInfoType);

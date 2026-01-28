@@ -117,6 +117,19 @@ public class AuthService implements IAuthService{
                 "TEMP".equals(claims.get("tokenType"));
     }
 
+    @Override
+    public int deleteToken(String userKey) {
+        try{
+            if(checkUserToken(userKey) == 0){
+                return 0;
+            }
+
+            return authRepository.deleteToken(userKey);
+        }catch (Exception e){
+            throw new RuntimeException("토큰 삭제 실패", e);
+        }
+    }
+
     private static PrivateKey loadPrivateKey(String filepath) {
         try (FileInputStream fis = new FileInputStream(new File(filepath))){
             String key = new String(fis.readAllBytes())

@@ -7,6 +7,7 @@ import com.grape.module.auth.model.TokenDto;
 import com.grape.module.auth.service.IAuthService;
 import com.grape.module.user.model.*;
 import com.grape.module.user.repository.IUserRepository;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -91,6 +92,46 @@ public class UserService implements IUserService{
         } catch(Exception e){
             logger.error("로그인 에러: " + e.getMessage());
             throw e;
+        }
+    }
+
+    @Override
+    public void signout(String refreshToken) {
+        try{
+            if(refreshToken == null || refreshToken.trim().isEmpty()){
+                throw new IllegalArgumentException("리프레시 토큰이 존재하지 않습니다.");
+            }
+
+            /*
+            *   토큰 파싱 및 검증(만료/서명 등)
+            *   parseJwtToken 내부에서 ExpiredJwtException 등 처리, 유효하지 않으면 RuntimeException 던짐
+            *   */
+            Claims claims = authService.parseJwtToken(refreshToken);
+
+            String userKey = claims.getSubject();
+            if(userKey == null || userKey.trim().isEmpty()) {
+                throw new RuntimeException("토큰에서 유저 정보를 찾을 수 없습니다");
+            }
+
+            boolean existToken = checkUserInfo(userKey, "userKey");
+            if(!existToken){
+                throw new RuntimeException("이미 로그아웃된 사용자이거나 토큰정보가 존재하지 않습니다.");
+            }
+
+            int deleteToken = authService.deleteToken(userKey);
+
+            if(deleteToken == 0){
+                throw new RuntimeException("로그아웃 처리 중 문제가 발생했습니다.");
+            }
+        } catch (IllegalArgumentException e){
+            logger.info("UserService/signout()/IllegalAtgumentException: "+e.getMessage());
+            throw e;
+        } catch (DataAccessException dae) {
+            logger.error("UserService/signout()/DataAccessException: "+dae.getMessage());
+            throw dae;
+        } catch (RuntimeException re){
+            logger.info("UserService/signout()/RuntimeException: "+re.getMessage());
+            throw re;
         }
     }
 
