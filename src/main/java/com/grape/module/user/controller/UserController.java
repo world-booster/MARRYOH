@@ -162,7 +162,6 @@ public class UserController {
             response.put("error", "원인 미지정 에러");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
-        }
     }
 
 }
