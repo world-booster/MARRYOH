@@ -23,6 +23,10 @@
         SELECT EXISTS (SELECT 1 FROM TB_TOKEN_SEC WHERE USER_KEY = #{userKey})
     </select>
 
+    <delete id="deleteToken" parameterType="String">
+        DELETE FROM TB_TOKEN_SEC WHERE USER_KEY = #{userKey}
+    </delete>
+
     <select id="selectRefreshToken" parameterType="String" resultType="String">
         SELECT TOKEN FROM TB_TOKEN_SEC WHERE USER_KEY = #{userKey}
     </select>

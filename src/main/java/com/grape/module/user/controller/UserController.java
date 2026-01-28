@@ -6,7 +6,9 @@ import com.grape.module.user.model.LoginDto;
 import com.grape.module.user.model.ResetPwDto;
 import com.grape.module.user.model.UserDto;
 import com.grape.module.user.service.UserService;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -100,7 +102,7 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/reset-pw/logout")
+    @PostMapping("/reset-pw")
     public ResponseEntity<Map<String,String>> findPw(@RequestBody ResetPwDto resetPwDto){
         Map<String,String> response = new HashMap<>();
         try {
@@ -138,6 +140,28 @@ public class UserController {
         }catch (Exception e){
             response.put("error", "원인 미지정 에러");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @PostMapping("/signout")
+    public ResponseEntity<Map<String,String>> signout(@RequestHeader("Refresh-Token") String refreshToken){
+        Map<String,String> response = new HashMap<>();
+
+        try{
+            userService.signout(refreshToken);
+
+            response.put("message", "success");
+            return ResponseEntity.ok(response);
+        }catch (IllegalArgumentException e){
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }catch (RuntimeException e){
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }catch (Exception e){
+            response.put("error", "원인 미지정 에러");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
         }
     }
 
