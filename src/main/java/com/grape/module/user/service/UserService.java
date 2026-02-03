@@ -163,6 +163,90 @@ public class UserService implements IUserService{
         }
     }
 
+    @Override
+    public UserProfileDto getProfile(String accessToken){
+        try{
+            if(accessToken == null || accessToken.trim().isEmpty()){
+                throw new IllegalArgumentException("Access 토큰이 존재하지 않습니다.");
+            }
+
+            Claims claims = authService.parseJwtToken(accessToken);
+            String userKey = claims.getSubject();
+            if(userKey == null || userKey.trim().isEmpty()){
+                throw new RuntimeException("토큰에서 사용자 정보를 찾을 수 없습니다.");
+            }
+
+            UserDto user = userRepository.selectUserByKey(userKey)
+                    .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+
+            return new UserProfileDto(
+                    user.getUserId(),
+                    user.getUserNickname(),
+                    user.getUserEmail(),
+                    user.getSignupDt().toString(),
+                    user.getLoginAuth(),
+                    user.getAdminYn()
+            );
+
+        }catch (IllegalArgumentException iae){
+            logger.info("UserService/getProfile()/IllegalArgumentException" + iae.getMessage());
+            throw iae;
+        }catch (DataAccessException dae){
+            logger.error("UserService/getProfile()/DataAccessException" + dae.getMessage());
+            throw dae;
+        }catch (RuntimeException re){
+            logger.info("UserService/getProfile()/RuntimeException" + re.getMessage());
+            throw re;
+        }catch (Exception e){
+            logger.error("UserService/getProfile()/Excetion" + e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    public void updateProfile(String accessToken, UserProfileUpdateDto updateDto){
+        try{
+            if(accessToken == null || accessToken.trim().isEmpty()){
+                throw new IllegalArgumentException("Access 토큰이 존재하지 않습니다.");
+            }
+
+            Claims claims = authService.parseJwtToken(accessToken);
+            String userKey = claims.getSubject();
+            if(userKey == null || userKey.trim().isEmpty()){
+                throw new RuntimeException("토큰에서 사용자 정보를 찾을 수 없습니다.");
+            }
+
+            UserDto user = userRepository.selectUserByKey(userKey)
+                    .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+
+            if(updateDto.getUserNickname() != null) {
+                if(!validator.isTextValid(updateDto.getUserNickname(), 2, 10, false, false, false, false)){
+                    throw new IllegalArgumentException("닉네임 형식이 올바르지 않습니다.");
+                }
+                if(userRepository.existUserNickname(updateDto.getUserNickname())){
+                    throw new RuntimeException("이미 존재하는 닉네임 입니다.");
+                }
+                user.setUserNickname(updateDto.getUserNickname());
+            }
+
+            int updated = userRepository.updateUserProfile(user);
+            if(updated == 0){
+                throw new RuntimeException("프로필 수정에 실패했습니다.");
+            }
+        }catch (IllegalArgumentException e) {
+            logger.info("UserService/updateProfile()/IllegalArgumentException: " + e.getMessage());
+            throw e;
+        } catch (DataAccessException dae) {
+            logger.error("UserService/updateProfile()/DataAccessException: " + dae.getMessage());
+            throw dae;
+        } catch (RuntimeException re) {
+            logger.info("UserService/updateProfile()/RuntimeException: " + re.getMessage());
+            throw re;
+        } catch (Exception e) {
+            logger.error("UserService/updateProfile()/Exception: " + e.getMessage(), e);
+            throw e;
+        }
+    }
 
     /*
     *  유효성 검증 메서드
@@ -199,6 +283,7 @@ public class UserService implements IUserService{
             throw e;
         }
     }
+
 
 
     /*

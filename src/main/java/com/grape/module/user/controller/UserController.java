@@ -1,10 +1,7 @@
 package com.grape.module.user.controller;
 
 import com.grape.module.auth.model.TokenDto;
-import com.grape.module.user.model.FindIdDto;
-import com.grape.module.user.model.LoginDto;
-import com.grape.module.user.model.ResetPwDto;
-import com.grape.module.user.model.UserDto;
+import com.grape.module.user.model.*;
 import com.grape.module.user.service.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
@@ -164,4 +161,45 @@ public class UserController {
         }
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String token){
+        Map<String,String> response = new HashMap<>();
+        try{
+            String accessToken = token.replace("Bearer","").trim();
+            UserProfileDto profileDto = userService.getProfile(accessToken);
+            return ResponseEntity.ok(profileDto);
+        } catch (IllegalArgumentException iae){
+            response.put("error", iae.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        } catch (RuntimeException e) {
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } catch (Exception e) {
+            response.put("error", "원인 미지정 에러");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<Map<String,String>> updateProfile(
+            @RequestHeader("Autorization") String token,
+            @RequestBody UserProfileUpdateDto updateDto){
+        Map<String, String> response = new HashMap<>();
+
+        try{
+            String accessToken = token.replace("Bearer","").trim();
+            userService.updateProfile(accessToken, updateDto);
+            response.put("message", "success");
+            return ResponseEntity.ok(response);
+        }catch (IllegalArgumentException e) {
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        } catch (RuntimeException e) {
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } catch (Exception e) {
+            response.put("error", "원인 미지정 에러");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 }
