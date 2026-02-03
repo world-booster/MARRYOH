@@ -107,6 +107,21 @@
         WHERE USER_ID = #{userId}
     </select>
 
+    <select id="selectUserByKey" parameterType="String" resultType="com.grape.module.user.model.UserDto">
+        SELECT
+            USER_KEY,
+            USER_ID,
+            USER_PW,
+            USER_NICKNAME,
+            USER_EMAIL,
+            SIGNUP_DT,
+            LOGIN_AUTH,
+            ADMIN_YN,
+            SOCIAL_LOGIN_YN
+        FROM TB_USER_MST
+        WHERE USER_KEY = #{userKey}
+    </select>
+
     <select id="selectUserId" parameterType="String" resultType="String">
         SELECT
              USER_ID,
@@ -118,6 +133,12 @@
         UPDATE TB_USER_MST
         SET USER_PW = #{userPw},
             USER_INFO_UPDATE_DT = NOW()
+        WHERE USER_KEY = #{userKey}
+    </update>
+
+    <update id="updateUserProfile" parameterType="com.grape.module.user.model.UserDto">
+        UPDATE TB_USER_MST
+        SET USER_NICKNAME = #{userNickname}
         WHERE USER_KEY = #{userKey}
     </update>
 </mapper>

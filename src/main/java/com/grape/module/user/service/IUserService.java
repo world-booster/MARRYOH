@@ -20,4 +20,6 @@ public interface IUserService {
     int resetPassword(ResetPwDto resetPwDto);
     boolean checkUserInfo(String userInfo, String userInfoType);
     String findUserInfo(UserFindingInfoDto userFindingInfo, String userFindingInfoType);
+    UserProfileDto getProfile(String accessToken);
+    void updateProfile(String accessToken, UserProfileUpdateDto updateDto);
 }
