@@ -20,4 +20,8 @@ public class DateFormat {
         public String getNowFormat() {
             return LocalDateTime.now().format(FORMATTER);
         }
+
+        public LocalDateTime getMariaDbDateTime() {
+            return LocalDateTime.parse(getNowFormat(), FORMATTER);
+        }
 }

@@ -23,5 +23,6 @@ public interface IAuthService {
     Claims parseJwtToken(String token);
     boolean verifyAccessToken(String token);
     boolean verifyTempToken(String token);
+    boolean verifyRefreshToken(String token);
     int deleteToken(String userKey);
 }

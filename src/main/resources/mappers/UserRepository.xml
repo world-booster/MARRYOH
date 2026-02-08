@@ -61,19 +61,19 @@
         SELECT USER_PW FROM TB_USER_MST WHERE USER_ID = #{userId}
     </select>
 
-    <select id="selectUserId" parameterType="String" resultType="boolean">
+    <select id="existUserId" parameterType="String" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_ID = #{userId})
     </select>
 
-    <select id="selectUserNickname" parameterType="String" resultType="boolean">
+    <select id="existUserNickname" parameterType="String" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_NICKNAME = #{userNickname})
     </select>
 
-    <select id="selectUserEmail" parameterType="String" resultType="boolean">
+    <select id="existUserEmail" parameterType="String" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_EMAIL = #{userEmail})
     </select>
 
-    <select id="selectUserKey" parameterType="String" resultType="boolean">
+    <select id="existUserKey" parameterType="String" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_KEY = #{userKey})
     </select>
 

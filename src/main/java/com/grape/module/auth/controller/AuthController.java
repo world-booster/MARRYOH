@@ -1,32 +1,55 @@
 package com.grape.module.auth.controller;
 
 import com.grape.module.auth.service.IAuthService;
+import com.grape.module.user.service.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Date;
 import java.util.Map;
 
+@CrossOrigin(origins = "http://localhost:*")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/auth")
 public class AuthController {
 
+    private static final Logger logger = LogManager.getLogger(AuthController.class);
+
     private final IAuthService authService;
 
     @PostMapping("/token-verify")
-    public ResponseEntity<String> tokenVerify(@RequestHeader("Authorization") String token){
-        token = token.replace("Bearer", "");
-        if(authService.verifyTempToken(token)){
-            return ResponseEntity.ok("임시 인증 성공");
+    public ResponseEntity<String> tokenVerify(
+            @RequestHeader("Authorization") String header,
+            @RequestBody Map<String, String> request){
+        try{
+            String token = header.replace("Bearer","");
+            String tokenType = request.get("tokenType");
+            logger.debug("토큰 타입:"+tokenType);
+            logger.debug("토큰 길이:"+token.length());
+
+            boolean isValid;
+            if("TEMP".equals(tokenType)){
+                isValid = authService.verifyTempToken(token);
+            }else if("ACCESS".equals(tokenType)){
+                isValid = authService.verifyAccessToken(token);
+            } else if("REFRESH".equals(tokenType)){
+                isValid = authService.verifyRefreshToken(token);
+            } else {
+                return ResponseEntity.badRequest().body("알 수 없는 토큰 타입");
+            }
+
+            return isValid ? ResponseEntity.ok("ok") : ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("토큰 검증 실패");
+        } catch (Exception e){
+            logger.debug("토큰 검증 에러:"+e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("토큰 인증 - 서버 오류");
         }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않거나 만료된 토큰입니다");
     }
 
     @PostMapping("/update-token")

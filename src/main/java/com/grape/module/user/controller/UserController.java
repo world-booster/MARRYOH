@@ -18,6 +18,7 @@ import java.util.Map;
 * 유저 상태 및 정보관련 CRUD 서비스 매핑
 * 회원가입, 로그인, 로그아웃, 마이페이지 조회, 회원 정보 수정, 회원 정보 검증
 * */
+@CrossOrigin(origins = "http://localhost:*")
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
@@ -78,7 +79,7 @@ public class UserController {
             response.put("error", "요청 파일 read 에러");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }catch (Exception e){
-            response.put("error", "원인 미지정 에러");
+            response.put("error", "에러: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
         response.put("message","success");
@@ -201,5 +202,10 @@ public class UserController {
             response.put("error", "원인 미지정 에러");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+    }
+
+    @GetMapping("/test")
+    public void test(){
+        System.out.println("성공입니다~");
     }
 }
