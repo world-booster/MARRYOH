@@ -15,6 +15,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 
 /*
 * int 타입 반환 1: 성공/ 0: 실패
@@ -33,26 +36,39 @@ public class UserService implements IUserService{
 
     @Override
     public int signup(UserDto user) throws Exception{
+        logger.info("=== signup 시작 ===");
+        logger.info("입력 데이터: ID={}, Nick={}, Email={}",
+                user.getUserId(), user.getUserNickname(), user.getUserEmail());
         try {
+            logger.debug("1. generateUuidV7 호출");
             user.setUserKey(generateUuidV7());
-            /* 유저키 생성이후 토큰 생성 및 저장 */
-            if(authService.createRefreshToken(user.getUserKey()) == 0){
-                return 0;
-            }
+            logger.debug("2. userKey: {}", user.getUserKey());
+
             initializeInfo(user);
+            logger.debug("3. initializeInfo 성공");
             if(!checkUserInfo(user.getUserId(), "id") ||
                     !checkUserInfo(user.getUserPw(), "pw") ||
                     !checkUserInfo(user.getUserNickname(), "nickname") ||
                     !checkUserInfo(user.getUserEmail(), "email")){
+                System.out.println("에러로그2:"+checkUserInfo(user.getUserId(),"id")+","+checkUserInfo(user.getUserPw(),"pw")+","+checkUserInfo(user.getUserNickname(),"nickname")+","+checkUserInfo(user.getUserEmail(),"email"));
                 return 0;
             }
             /* 비밀번호 bcrypt 암호화 */
             String encodedPw = passwordEncoder.encode(user.getUserPw());
             user.setUserPw(encodedPw);
-            return userRepository.insertUser(user);
-        }catch (NullPointerException npe){
-            logger.info("UserService/signup(UserDto user)/nullpointerException");
-            return 0;
+
+            int result = userRepository.insertUser(user);
+            if(result == 0){
+                return 0;
+            }
+
+            /* 유저 생성이후 토큰 생성 및 저장 */
+            if(authService.createRefreshToken(user.getUserKey()) == 0){
+                System.out.println("에러로그1:"+user.getUserKey());
+                return 0;
+            }
+
+            return result;
         }catch (DataAccessException dae) {
             logger.info("UserService/signup(UserDto user)/DataAccessException");
             throw dae;
@@ -258,19 +274,19 @@ public class UserService implements IUserService{
             if(userInfo == null) return false;
             switch (userInfoType) {
                 case "id" -> {
-                    return validator.isTextValid(userInfo, 5, 20, false, false, false, false) && userRepository.existUserId(userInfo);
+                    return validator.isTextValid(userInfo, 5, 20, false, false, false, false) && !userRepository.existUserId(userInfo);
                 }
                 case "nickname" -> {
-                    return validator.isTextValid(userInfo, 2, 10, false, false, false, false) && userRepository.existUserNickname(userInfo);
+                    return validator.isTextValid(userInfo, 2, 10, false, false, false, false) && !userRepository.existUserNickname(userInfo);
                 }
                 case "email" -> {
-                    return userRepository.existUserEmail(userInfo);
+                    return !userRepository.existUserEmail(userInfo);
                 }
                 case "pw" -> {
                     return validator.isTextValid(userInfo, 7, 10, true, true, true, true);
                 }
                 case "userKey" -> {
-                    return userRepository.existUserKey(userInfo);
+                    return !userRepository.existUserKey(userInfo);
                 }
                 default -> {
                     return false;
@@ -287,25 +303,35 @@ public class UserService implements IUserService{
 
 
     /*
-    * uuid-v7 Unix Expoch 시간 기반으로 기존 v4, v1의 단점을 보완해 분산시스템에서 효율적이고 안전한 식별자 생성가능
+    * JDK UUID사용 ( uuid v7(시간순) -> jdk uuid[랜덤] 변경)
     *  */
     private String generateUuidV7(){
-        String uuidV7 = Generators.timeBasedEpochGenerator().generate().toString();
-        while (checkUserInfo(uuidV7,"userKey")) {
-            uuidV7 = Generators.timeBasedEpochGenerator().generate().toString();
+        // 무한 루프 방지 + JDK UUID 사용
+        for(int i = 0; i < 10; i++) {
+            String uuidV7 = UUID.randomUUID().toString().replace("-", "");
+            logger.info("생성된 userKey 시도 {}: {}", i+1, uuidV7);
+
+            if(checkUserInfo(uuidV7, "userKey")) {
+                logger.info("사용 가능한 userKey: {}", uuidV7);
+                return uuidV7;
+            }
         }
-        return uuidV7;
+        logger.error("userKey 생성 실패 - 10회 시도 모두 중복");
+        throw new RuntimeException("고유한 userKey 생성 실패");
     }
 
     /* 회원정보 초기화 함수 */
     private UserDto initializeInfo(UserDto user){
         if (user.getSocialLoginYn() == null || !user.getSocialLoginYn().equals("Y")) {
             user.setSocialLoginYn("N");
-        } else if (user.getSignupDt() == null) {
-            user.setSignupDt(dateFormat.getNow());
-        } else if (user.getLoginAuth() == null) {
+        }
+        if (user.getSignupDt() == null) {
+            user.setSignupDt(dateFormat.getMariaDbDateTime());
+        }
+        if (user.getLoginAuth() == null) {
             user.setLoginAuth("L");
-        } else if (!user.getAdminYn().equals("Y")) {
+        }
+        if (user.getAdminYn() == null || !user.getAdminYn().equals("Y")) {
             user.setAdminYn("N");
         }
         return user;
