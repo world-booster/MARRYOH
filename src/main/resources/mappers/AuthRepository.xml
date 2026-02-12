@@ -27,7 +27,15 @@
         DELETE FROM TB_TOKEN_SEC WHERE USER_KEY = #{userKey}
     </delete>
 
+    <delete id="deleteTokenByToken" parameterType="String">
+        DELETE FROM TB_TOKEN_SEC WHERE TOKEN = #{token}
+    </delete>
+
     <select id="selectRefreshToken" parameterType="String" resultType="String">
         SELECT TOKEN FROM TB_TOKEN_SEC WHERE USER_KEY = #{userKey}
+    </select>
+
+    <select id="selectUserKeyByToken" parameterType="String" resultType="String">
+        SELECT USER_KEY FROM TB_TOKEN_SEC WHERE TOKEN = #{token}
     </select>
 </mapper>

@@ -6,7 +6,9 @@ import com.grape.module.user.service.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
@@ -125,10 +127,20 @@ public class UserController {
         try{
             TokenDto tokenDto = userService.signin(loginDto);
 
+            ResponseCookie cookie = ResponseCookie.from("REFRESH-TOKEN", tokenDto.getRefreshToken())
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .maxAge(7*24*60*60)
+                    .sameSite("Lax")
+                    .build();
+
+
             response.put("accessToken", tokenDto.getAccessToken());
-            response.put("refreshToken", tokenDto.getRefreshToken());
             response.put("message", "success");
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(response);
         }catch (IllegalArgumentException e) {
             response.put("error", "비밀번호 불일치 또는 사용자 없음");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
@@ -142,14 +154,24 @@ public class UserController {
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<Map<String,String>> signout(@RequestHeader("Refresh-Token") String refreshToken){
+    public ResponseEntity<Map<String,String>> signout(@CookieValue(value = "REFRESH-TOKEN", required = false) String refreshToken){
         Map<String,String> response = new HashMap<>();
-
+        System.out.println("토큰: "+ refreshToken);
         try{
             userService.signout(refreshToken);
 
+            ResponseCookie expiredCookie = ResponseCookie.from("REFRESH-TOKEN", "")
+                    .path("/")
+                    .httpOnly(true)
+                    .maxAge(0)
+                    .sameSite("Lax") // 개발단계 : Lax , 운영 : strict
+                    .secure(false) // 개발단계 : false , 운영 : true
+                    .build();
+
             response.put("message", "success");
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, expiredCookie.toString())
+                    .body(response);
         }catch (IllegalArgumentException e){
             response.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
