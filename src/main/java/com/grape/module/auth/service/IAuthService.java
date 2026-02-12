@@ -19,10 +19,14 @@ public interface IAuthService {
     String selectRefreshToken(String userKey);
     String createTempToken(String userKey);
     String jwtTokenGenerator(String userKey);
+    String refreshTokenGenerator(String userKey);
+    String hashRefreshToken(String refreshToken);
     int checkUserToken(String userKey);
     Claims parseJwtToken(String token);
     boolean verifyAccessToken(String token);
     boolean verifyTempToken(String token);
-    boolean verifyRefreshToken(String token);
+    String verifyRefreshToken(String token, String userKey);
     int deleteToken(String userKey);
+    int deleteTokenByToken(String refreshToken);
+    String selectUserKeyByToken(String refreshToken);
 }

@@ -1,9 +1,9 @@
 package com.grape.module.auth.service;
 
 
-import com.grape.common.DateFormat;
+import com.grape.module.auth.model.TokenDto;
+import com.grape.utils.DateFormatter;
 import com.grape.module.auth.repository.IAuthRepository;
-import com.grape.module.user.service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -17,20 +17,20 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.security.KeyFactory;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
+import java.nio.charset.StandardCharsets;
+import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService implements IAuthService{
 
     private static final Logger logger = LogManager.getLogger(AuthService.class);
+
 
 //    private static final PrivateKey PRIVATE_KEY = loadPrivateKey("D:\\Programming\\grape_openssl\\private_key.pem");
 //    private static final PublicKey PUBLIC_KEY = loadPublicKey("D:\\Programming\\grape_openssl\\public_key.pem");
@@ -42,7 +42,7 @@ public class AuthService implements IAuthService{
     private PrivateKey privateKey;
     private PublicKey publicKey;
     private final IAuthRepository authRepository;
-    private final DateFormat dateFormat;
+    private final DateFormatter dateFormatter;
 
     @PostConstruct
     public void initKeys(){
@@ -64,12 +64,13 @@ public class AuthService implements IAuthService{
 
         if(checkUserToken(userKey) == 1) return 0;
 
-        String token = jwtTokenGenerator(userKey);
+        String token = refreshTokenGenerator(userKey);
         if(token == null) return 0;
 
-        String tokenKey = userKey + dateFormat.getNowFormat();
-        System.out.println("토큰키길이:"+tokenKey.length());
-        return authRepository.insertToken(token,tokenKey,userKey);
+        String hashedToken = hashRefreshToken(token);
+
+        String tokenKey = userKey + dateFormatter.getNowFormat();
+        return authRepository.insertToken(hashedToken,tokenKey,userKey);
     }
 
     @Override
@@ -106,6 +107,25 @@ public class AuthService implements IAuthService{
     }
 
     @Override
+    public String refreshTokenGenerator(String userKey){
+        if(userKey == null){
+            throw new IllegalArgumentException("유저가 존재하지 않습니다.");
+        }
+        return UUID.randomUUID().toString();
+    }
+
+    @Override
+    public String hashRefreshToken(String refreshToken) {
+        try{
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(refreshToken.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException nae){
+            throw new IllegalArgumentException("SHA-256 알고리즘이 존재하지 않습니다: "+nae.getMessage());
+        }
+    }
+
+    @Override
     public int checkUserToken(String userKey) {
         try{
             if(userKey == null) return 0;
@@ -117,6 +137,10 @@ public class AuthService implements IAuthService{
 
     @Override
     public Claims parseJwtToken(String token) {
+        if(token == null || token.isBlank()){
+            throw new IllegalArgumentException("JWT 토큰이 존재하지 않습니다.");
+        }
+
         try{
             return Jwts.parserBuilder()
                     .setSigningKey(this.publicKey)
@@ -149,16 +173,22 @@ public class AuthService implements IAuthService{
     }
 
     @Override
-    public boolean verifyRefreshToken(String token) {
-        Claims claims = parseJwtToken(token);
-        Date now = new Date();
+    public String verifyRefreshToken(String token, String userKey) {
+        if(token == null || token.isBlank()){
+            throw new IllegalArgumentException("리프레시 토큰 없음");
+        }
 
-        String userKey = claims.getSubject();
-        String storedToken = selectRefreshToken(userKey);
+        String hashed = hashRefreshToken(token);
 
-        return claims.getExpiration().after(now) &&
-                storedToken != null &&
-                storedToken.equals(token);
+        String refreshTokenInDB = authRepository.selectRefreshToken(userKey);
+
+        if(refreshTokenInDB == null){
+            throw new RuntimeException("서버에 리프레시 토큰이 존재하지 않습니다.");
+        }
+
+        //폐기랑 만료여부
+
+        return "검증";
     }
 
     @Override
@@ -171,6 +201,24 @@ public class AuthService implements IAuthService{
             return authRepository.deleteToken(userKey);
         }catch (Exception e){
             throw new RuntimeException("토큰 삭제 실패", e);
+        }
+    }
+
+    @Override
+    public int deleteTokenByToken(String refreshToken) {
+        try{
+            return authRepository.deleteToken(refreshToken);
+        }catch (Exception e){
+            throw new RuntimeException("토큰 삭제 실패", e);
+        }
+    }
+
+    @Override
+    public String selectUserKeyByToken(String refreshToken){
+        try{
+            return authRepository.selectUserKeyByToken(refreshToken);
+        }catch (Exception e){
+            throw new RuntimeException("유저찾기(토큰) 실패", e);
         }
     }
 

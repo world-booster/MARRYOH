@@ -1,4 +1,4 @@
-package com.grape.common;
+package com.grape.utils;
 
 import lombok.Getter;
 import org.springframework.stereotype.Component;

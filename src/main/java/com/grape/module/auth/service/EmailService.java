@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 public class EmailService implements IEmailService {
 
     private final JavaMailSender mailSender;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate; //Redis는 캐시메모리 -> SMTP로 수정해야함
     private static final String SENDER_EMAIL = "rldud96@gmail.com";
 
     @Override

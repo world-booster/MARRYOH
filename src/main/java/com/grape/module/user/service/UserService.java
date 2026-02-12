@@ -1,21 +1,21 @@
 package com.grape.module.user.service;
 
-import com.fasterxml.uuid.Generators;
-import com.grape.common.DateFormat;
-import com.grape.common.Validator;
+import com.grape.utils.DateFormatter;
+import com.grape.utils.Validator;
 import com.grape.module.auth.model.TokenDto;
 import com.grape.module.auth.service.IAuthService;
 import com.grape.module.user.model.*;
 import com.grape.module.user.repository.IUserRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.CookieValue;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 
@@ -30,27 +30,20 @@ public class UserService implements IUserService{
 
     private final IUserRepository  userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final DateFormat dateFormat;
+    private final DateFormatter dateFormatter;
     private final Validator validator;
     private final IAuthService authService;
 
     @Override
     public int signup(UserDto user) throws Exception{
-        logger.info("=== signup 시작 ===");
-        logger.info("입력 데이터: ID={}, Nick={}, Email={}",
-                user.getUserId(), user.getUserNickname(), user.getUserEmail());
         try {
-            logger.debug("1. generateUuidV7 호출");
             user.setUserKey(generateUuidV7());
-            logger.debug("2. userKey: {}", user.getUserKey());
-
             initializeInfo(user);
-            logger.debug("3. initializeInfo 성공");
+
             if(!checkUserInfo(user.getUserId(), "id") ||
                     !checkUserInfo(user.getUserPw(), "pw") ||
                     !checkUserInfo(user.getUserNickname(), "nickname") ||
                     !checkUserInfo(user.getUserEmail(), "email")){
-                System.out.println("에러로그2:"+checkUserInfo(user.getUserId(),"id")+","+checkUserInfo(user.getUserPw(),"pw")+","+checkUserInfo(user.getUserNickname(),"nickname")+","+checkUserInfo(user.getUserEmail(),"email"));
                 return 0;
             }
             /* 비밀번호 bcrypt 암호화 */
@@ -64,15 +57,15 @@ public class UserService implements IUserService{
 
             /* 유저 생성이후 토큰 생성 및 저장 */
             if(authService.createRefreshToken(user.getUserKey()) == 0){
-                System.out.println("에러로그1:"+user.getUserKey());
                 return 0;
             }
 
             return result;
         }catch (DataAccessException dae) {
-            logger.info("UserService/signup(UserDto user)/DataAccessException");
+            logger.debug("회원가입 에러: "+dae.getMessage());
             throw dae;
         }catch (Exception e){
+            logger.debug("회원가입 에러: "+e.getMessage());
             throw e;
         }
     }
@@ -90,7 +83,11 @@ public class UserService implements IUserService{
             String encodedPassword = userRepository.selectUserPw(user.getUserId());
             if(encodedPassword == null){
                 logger.info("로그인 실패: 암호화된 비밀번호 없음 - id : "+user.getUserId());
-                throw new RuntimeException("암호화된 비밀번호가 존재하지 않습니다.");
+                throw new IllegalArgumentException("저장된 비밀번호가 존재하지 않습니다.");
+            }
+
+            if(!passwordEncoder.matches(loginDto.getPassword(), encodedPassword)){
+                throw new IllegalArgumentException("비밀번호 불일치");
             }
 
             logger.info("로그인 성공: "+ loginDto.getUserId());
@@ -114,40 +111,14 @@ public class UserService implements IUserService{
     @Override
     public void signout(String refreshToken) {
         try{
-            if(refreshToken == null || refreshToken.trim().isEmpty()){
-                throw new IllegalArgumentException("리프레시 토큰이 존재하지 않습니다.");
+
+            if(refreshToken == null || refreshToken.isBlank()) {
+                return;
             }
+            authService.deleteTokenByToken(refreshToken);
 
-            /*
-            *   토큰 파싱 및 검증(만료/서명 등)
-            *   parseJwtToken 내부에서 ExpiredJwtException 등 처리, 유효하지 않으면 RuntimeException 던짐
-            *   */
-            Claims claims = authService.parseJwtToken(refreshToken);
-
-            String userKey = claims.getSubject();
-            if(userKey == null || userKey.trim().isEmpty()) {
-                throw new RuntimeException("토큰에서 유저 정보를 찾을 수 없습니다");
-            }
-
-            boolean existToken = checkUserInfo(userKey, "userKey");
-            if(!existToken){
-                throw new RuntimeException("이미 로그아웃된 사용자이거나 토큰정보가 존재하지 않습니다.");
-            }
-
-            int deleteToken = authService.deleteToken(userKey);
-
-            if(deleteToken == 0){
-                throw new RuntimeException("로그아웃 처리 중 문제가 발생했습니다.");
-            }
-        } catch (IllegalArgumentException e){
-            logger.info("UserService/signout()/IllegalAtgumentException: "+e.getMessage());
-            throw e;
-        } catch (DataAccessException dae) {
-            logger.error("UserService/signout()/DataAccessException: "+dae.getMessage());
-            throw dae;
-        } catch (RuntimeException re){
-            logger.info("UserService/signout()/RuntimeException: "+re.getMessage());
-            throw re;
+        } catch (ExpiredJwtException e){
+            return;
         }
     }
 
@@ -326,7 +297,7 @@ public class UserService implements IUserService{
             user.setSocialLoginYn("N");
         }
         if (user.getSignupDt() == null) {
-            user.setSignupDt(dateFormat.getMariaDbDateTime());
+            user.setSignupDt(dateFormatter.getMariaDbDateTime());
         }
         if (user.getLoginAuth() == null) {
             user.setLoginAuth("L");

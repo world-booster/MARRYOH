@@ -1,4 +1,4 @@
-package com.grape.config;
+package com.grape.config.redis;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
