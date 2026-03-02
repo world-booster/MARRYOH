@@ -43,4 +43,12 @@ public class Validator {
         return true;
     }
 
+    //프로퍼티
+    public boolean isValidId(String id){
+        return isTextValid(id,5,20,false, false,false,false );
+    }
+
+    public boolean isValidNickname(String nickname) { return isTextValid(nickname,2,10,false,false,false,false); }
+
+    public boolean isValidPassword(String password) { return isTextValid(password,7,10,true,true,true,true); }
 }

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.grape.common.email.mybatis.EmailVerificationRepository">
+    <!--정책 조회: 쿨다운/잠금 체크에 필요한 최소 정보-->
+    <select id="selectPolicyRow" resultType="com.grape.common.email.EmailVerificationStore$PolicyRow">
+        SELECT
+            LAST_SENT_AT AS lastSentAt,
+            LOCKED_UNTIL AS lockedUntil
+        FROM EMAIL_VERIFICATION
+        WHERE EMAIL_HASH = #{emailHash}
+          AND VERIFY_TYPE = #{type}
+        LIMIT 1
+    </select>
+
+    <!--발송(email_hash, verify_type) 기준 UPSERT-->
+    <insert id="upsertSession">
+        INSERT INTO EMAIL_VERIFICATION (
+            EMAIL_HASH,
+            VERIFY_TYPE,
+            CODE_HASH,
+            EXPIRES_AT,
+            ATTEMPTS,
+            LOCKED_UNTIL,
+            LAST_SENT_AT,
+            USED_AT,
+            CREATED_AT,
+            UPDATED_AT
+        ) VALUES (
+            #{emailHash},
+            #{type},
+            #{codeHash},
+            #{expiresAt},
+            0,
+            NULL,
+            #{now},
+            NULL,
+            #{now},
+            #{now}
+        ) ON DUPLICATE KEY UPDATE
+            CODE_HASH   = VALUES(CODE_HASH),
+            EXPIRES_AT  = VALUES(EXPIRES_AT),
+            ATTEMPTS    = 0,
+            LOCKED_UNTIL= NULL,
+            LAST_SENT_AT= VALUES(LAST_SENT_AT),
+            USED_AT     = NULL,
+            UPDATED_AT  = VALUES(UPDATED_AT)
+    </insert>
+
+    <!--검증 성공: 조건을 만족하면 USED_AT 찍기-->
+    <update id="markUsedIfMatch">
+        UPDATE  EMAIL_VERIFICATION
+        SET     USED_AT = #{now},
+                UPDATED_AT = #{now}
+        WHERE   EMAIL_HASH = #{emailHash}
+          AND   VERIFY_TYPE = #{type}
+          AND   USED_AT IS NULL
+          AND   EXPIRES_AT > #{now}
+          AND   (LOCKED_UNTIL IS NULL OR LOCKED_UNTIL &lt;= #{now})
+          AND   CODE_HASH = #{codeHash}
+    </update>
+
+    <!--검증 실패: attempts 증가 + lock 설정-->
+    <update id="increaseAttempts">
+        UPDATE  EMAIL_VERIFICATION
+        SET     ATTEMPTS = ATTEMPTS + 1,
+                LOCKED_UNTIL = CASE
+                    WHEN ATTEMPTS + 1 >= #{maxAttempts} THEN #{lockedUntil}
+                    ELSE LOCKED_UNTIL
+                END,
+                UPDATED_AT = #{now}
+        WHERE   EMAIL_HASH = #{emailHash}
+          AND   VERIFY_TYPE = #{type}
+          AND   USED_AT IS NULL
+          AND   EXPIRES_AT > #{now}
+    </update>
+</mapper>

@@ -2,6 +2,7 @@ package com.grape.module.user.controller;
 
 import com.grape.module.auth.model.TokenDto;
 import com.grape.module.user.model.*;
+import com.grape.module.user.service.SignupService;
 import com.grape.module.user.service.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final SignupService signupService;
 
     @PostMapping("/verificator-id")
     public ResponseEntity<Map<String,String>> verificateId(@RequestBody UserDto user){
@@ -73,7 +75,7 @@ public class UserController {
     public ResponseEntity<Map<String,String>> signup(@RequestBody UserDto user){
         Map<String,String> response = new HashMap<>();
         try {
-            if (userService.signup(user) != 1) {
+            if (signupService.signup(user) != 1) {
                 response.put("error", "가입 실패");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
