@@ -1,8 +1,7 @@
 package com.grape.module.auth.service;
 
 import io.jsonwebtoken.Claims;
-
-import java.security.PrivateKey;
+import jakarta.mail.MessagingException;
 
 public interface IAuthService {
 
@@ -15,18 +14,24 @@ public interface IAuthService {
      * 값 검증 로직 포함(글자 수, 제한 조건, 필수 조건)
      *  */
 
-    int createRefreshToken(String userKey);
+    /* 토큰 관련 */
+    String createRefreshToken(String userKey);
     String selectRefreshToken(String userKey);
     String createTempToken(String userKey);
     String jwtTokenGenerator(String userKey);
     String refreshTokenGenerator(String userKey);
     String hashRefreshToken(String refreshToken);
     int checkUserToken(String userKey);
+    int checkToken(String refreshToken);
     Claims parseJwtToken(String token);
     boolean verifyAccessToken(String token);
     boolean verifyTempToken(String token);
-    String verifyRefreshToken(String token, String userKey);
+    boolean verifyRefreshToken(String token, String userKey);
     int deleteToken(String userKey);
     int deleteTokenByToken(String refreshToken);
     String selectUserKeyByToken(String refreshToken);
+
+    /* 이메일 인증 관련 */
+    void sendEmailVerification(String email) throws MessagingException;
+    boolean verifyEmailCode(String email, String code);
 }

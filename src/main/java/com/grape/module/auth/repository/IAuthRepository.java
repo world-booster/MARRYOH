@@ -14,6 +14,7 @@ public interface IAuthRepository {
 
     int insertToken(String token, String tokenKey, String userKey);
     int existUserToken(String userKey);
+    int existToken(String token);
     int deleteToken(String userKey);
     int deleteTokenByToken(String token);
     String selectRefreshToken(String userKey);

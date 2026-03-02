@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.CookieValue;
 
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -56,7 +57,7 @@ public class UserService implements IUserService{
             }
 
             /* 유저 생성이후 토큰 생성 및 저장 */
-            if(authService.createRefreshToken(user.getUserKey()) == 0){
+            if(authService.createRefreshToken(user.getUserKey()) == null){
                 return 0;
             }
 
@@ -92,11 +93,10 @@ public class UserService implements IUserService{
 
             logger.info("로그인 성공: "+ loginDto.getUserId());
 
-            int refreshResult = authService.createRefreshToken(user.getUserKey());
-            if(refreshResult == 0) {
-                throw new RuntimeException("리프레시 토큰 발급 실패 또는 이미 존재합니다.");
-            }
-            String refreshToken = authService.selectRefreshToken(user.getUserKey());
+            Optional<UserDto> userInfo = userRepository.selectUser(loginDto.getUserId());
+            String userKey = userInfo.get().getUserKey();
+
+            String refreshToken = authService.createRefreshToken(userKey);
 
             //access 토큰 발급
             String accessToken = authService.jwtTokenGenerator(user.getUserKey());

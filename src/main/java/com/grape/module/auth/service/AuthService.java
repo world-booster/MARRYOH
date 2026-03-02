@@ -1,6 +1,7 @@
 package com.grape.module.auth.service;
 
-
+import com.grape.common.email.EmailVerificationService;
+import com.grape.common.email.model.VerifyType;
 import com.grape.module.auth.model.TokenDto;
 import com.grape.utils.DateFormatter;
 import com.grape.module.auth.repository.IAuthRepository;
@@ -9,6 +10,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.annotation.PostConstruct;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,9 +33,6 @@ public class AuthService implements IAuthService{
 
     private static final Logger logger = LogManager.getLogger(AuthService.class);
 
-
-//    private static final PrivateKey PRIVATE_KEY = loadPrivateKey("D:\\Programming\\grape_openssl\\private_key.pem");
-//    private static final PublicKey PUBLIC_KEY = loadPublicKey("D:\\Programming\\grape_openssl\\public_key.pem");
     @Value("${auth.private-key-path}")
     private String privateKeyPath;
     @Value("${auth.public-key-path}")
@@ -43,6 +42,7 @@ public class AuthService implements IAuthService{
     private PublicKey publicKey;
     private final IAuthRepository authRepository;
     private final DateFormatter dateFormatter;
+    private final EmailVerificationService email;
 
     @PostConstruct
     public void initKeys(){
@@ -59,18 +59,23 @@ public class AuthService implements IAuthService{
     }
 
     @Override
-    public int createRefreshToken(String userKey) {
+    public String createRefreshToken(String userKey) {
         deleteToken(userKey);
 
-        if(checkUserToken(userKey) == 1) return 0;
+        if(checkUserToken(userKey) == 1) throw new RuntimeException("유저키가 존재하지 않습니다.");
 
         String token = refreshTokenGenerator(userKey);
-        if(token == null) return 0;
+        if(token == null) throw new RuntimeException("토큰 생성 실패");
 
         String hashedToken = hashRefreshToken(token);
 
         String tokenKey = userKey + dateFormatter.getNowFormat();
-        return authRepository.insertToken(hashedToken,tokenKey,userKey);
+        int result = authRepository.insertToken(hashedToken,tokenKey,userKey);
+
+        if(result == 0){
+            throw new RuntimeException("토큰 저장 실패");
+        }
+        return token;
     }
 
     @Override
@@ -136,6 +141,18 @@ public class AuthService implements IAuthService{
     }
 
     @Override
+    public int checkToken(String refreshToken){
+        try{
+            if(refreshToken == null || refreshToken.isBlank()) return 0;
+
+            String hashedToken = hashRefreshToken(refreshToken);
+            return authRepository.existToken(hashedToken);
+        }catch (Exception e){
+            throw e; //임시 exception 핸들링
+        }
+    }
+
+    @Override
     public Claims parseJwtToken(String token) {
         if(token == null || token.isBlank()){
             throw new IllegalArgumentException("JWT 토큰이 존재하지 않습니다.");
@@ -173,12 +190,16 @@ public class AuthService implements IAuthService{
     }
 
     @Override
-    public String verifyRefreshToken(String token, String userKey) {
+    public boolean verifyRefreshToken(String token, String userKey) {
         if(token == null || token.isBlank()){
             throw new IllegalArgumentException("리프레시 토큰 없음");
         }
 
-        String hashed = hashRefreshToken(token);
+        if(userKey == null || userKey.isBlank()){
+            throw new IllegalArgumentException("유저키 없음");
+        }
+
+        String hashedToken = hashRefreshToken(token);
 
         String refreshTokenInDB = authRepository.selectRefreshToken(userKey);
 
@@ -186,9 +207,7 @@ public class AuthService implements IAuthService{
             throw new RuntimeException("서버에 리프레시 토큰이 존재하지 않습니다.");
         }
 
-        //폐기랑 만료여부
-
-        return "검증";
+        return hashedToken.equals(refreshTokenInDB);
     }
 
     @Override
@@ -235,6 +254,16 @@ public class AuthService implements IAuthService{
         }catch(Exception e){
             throw new RuntimeException("개인키 로드 실패", e); //임시 exception 핸들링
         }
+    }
+
+    @Override
+    public void sendEmailVerification(String email) throws MessagingException {
+        this.email.send(email, VerifyType.USER);
+    }
+
+    @Override
+    public boolean verifyEmailCode(String email, String code) {
+        return this.email.verify(email, VerifyType.USER, code);
     }
 
     private static PublicKey loadPublicKey(String filepath) {
