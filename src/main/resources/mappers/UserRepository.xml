@@ -12,9 +12,6 @@
             USER_NAME,
             USER_RRM,
             PHONE_NUMBER,
-            SOCIAL_LOGIN_YN,
-            SOCIAL_PROVIDER,
-            SOCIAL_PROVIDER_KEY,
             USER_NICKNAME,
             USER_PROFILE_SEQ,
             SIGNUP_DT,
@@ -37,9 +34,6 @@
             #{userName},
             #{userRRM},
             #{phoneNumber},
-            #{socialLoginYn},
-            #{socialProvider},
-            #{socialProviderKey},
             #{userNickname},
             0,
             #{signupDt},
@@ -59,6 +53,10 @@
 
     <select id="selectUserPw" parameterType="String" resultType="String">
         SELECT USER_PW FROM TB_USER_MST WHERE USER_ID = #{userId}
+    </select>
+
+    <select id="selectUserEmail" parameterType="String" resultType="String">
+        SELECT USER_EMAIL FROM TB_USER_MST WHERE USER_KEY = #{userKey}
     </select>
 
     <select id="existUserId" parameterType="String" resultType="boolean">

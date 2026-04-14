@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.grape.module.social.repository.SocialAccountRepository">
+
+    <resultMap id="socialAccountMap" type="com.grape.module.social.model.SocialAccount">
+        <id property="socialAccountKey" column="social_account_key"/>
+        <result property="userKey" column="user_key"/>
+        <result property="provider" column="provider"
+                javaType="com.grape.module.social.model.SocialProvider"/>
+        <result property="providerKey" column="provider_key"/>
+        <result property="socialUserId" column="social_user_id"/>
+        <result property="linkStatus" column="link_status"/>
+        <result property="linkedDt" column="linked_dt"/>
+        <result property="lastSocialLoginDt" column="last_social_login_dt"/>
+        <result property="createdDt" column="created_dt"/>
+        <result property="updatedDt" column="updated_dt"/>
+    </resultMap>
+
+    <select id="findByProviderAndProviderUserId" resultMap="socialAccountMap">
+        SELECT
+            social_account_key,
+            user_key,
+            social_provider,
+            social_provider_key,
+            social_user_id,
+            link_status,
+            linked_dt,
+            last_social_login_dt,
+            created_dt,
+            updated_dt
+        FROM tb_social_account
+        WHERE social_provider = #{provider}
+            AND social_provider_key = #{providerUserId}
+            AND link_status = 'LINKED'
+        LIMIT 1
+    </select>
+
+    <insert id="insertSocialAccount" parameterType="com.grape.module.social.model.SocialAccount"
+            useGeneratedKeys="true" keyProperty="socialAccountKey">
+        INSERT INTO tb_social_account (
+            user_key,
+            social_provider,
+            social_provider_key,
+            social_user_id,
+            link_status,
+            linked_dt,
+            last_social_login_dt,
+            created_dt,
+            updated_dt
+        ) VALUES (
+            #{userKey},
+            #{provider},
+            #{providerKey},
+            #{socialUserId},
+            #{linkStatus},
+            #{linkedDt},
+            #{lastSocialLoginDt},
+            #{createdDt},
+            #{updatedDt}
+        )
+    </insert>
+
+    <update id="updateLastSocialLoginDt">
+        UPDATE tb_social_account
+        SET last_social_login_dt = #{lastSocialLoginDt},
+            updated_dt = NOW()
+        WHERE social_account_key = #{socialAccountKey}
+    </update>
+
+</mapper>
