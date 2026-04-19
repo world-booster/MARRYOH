@@ -1,13 +1,12 @@
 package com.grape.module.auth.adaptor;
 
 import com.grape.module.auth.service.TokenService;
-import com.grape.module.user.adaptor.UserAuthPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class AuthUserAdaptor implements UserAuthPort {
+public class AuthAdaptor implements AuthPort{
 
     private final TokenService tokenService;
 
@@ -17,8 +16,15 @@ public class AuthUserAdaptor implements UserAuthPort {
     }
 
     @Override
-    public String jwtTokenGenerator(String userKey) { return tokenService.jwtTokenGenerator(userKey); }
+    public String createAccessToken(String userKey) { return tokenService.jwtTokenGenerator(userKey); }
 
     @Override
-    public int deleteTokenByToken(String refreshToken) { return tokenService.deleteTokenByToken(refreshToken);}
+    public String jwtTokenGenerator(String userKey) {
+        return tokenService.jwtTokenGenerator(userKey);
+    }
+
+    @Override
+    public int deleteTokenByToken(String refreshToken) {
+        return tokenService.deleteTokenByToken(refreshToken);
+    }
 }

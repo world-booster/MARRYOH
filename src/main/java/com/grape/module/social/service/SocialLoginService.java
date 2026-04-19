@@ -1,19 +1,15 @@
 package com.grape.module.social.service;
 
-import com.grape.module.social.adaptor.SocialAuthPort;
+import com.grape.module.auth.adaptor.AuthPort;
 import com.grape.module.social.adaptor.SocialOAuthClient;
-import com.grape.module.social.adaptor.SocialUserPort;
 import com.grape.module.social.model.SocialAccount;
 import com.grape.module.social.model.SocialLoginCommand;
 import com.grape.module.social.model.SocialLoginResult;
 import com.grape.module.social.model.SocialProfile;
-import com.grape.module.user.repository.IUserRepository;
-import com.grape.module.user.service.SignupService;
+import com.grape.module.user.adaptor.UserPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,9 +17,9 @@ public class SocialLoginService {
 
     private final SocialProviderService socialProviderService;
     private final SocialAccountService socialAccountService;
-    private final SocialAuthPort socialAuthPort;
     private final SocialSignupService socialSignupService;
-    private final IUserRepository userRepository;
+    private final AuthPort authPort;
+    private final UserPort userPort;
 
     @Transactional
     public SocialLoginResult login(SocialLoginCommand command){
@@ -47,9 +43,9 @@ public class SocialLoginService {
 
             socialAccountService.updateLastLogin(socialAccount.getSocialAccountKey());
         }
-        userEmail = userRepository.selectUserEmail(userKey);
-        String refreshToken = socialAuthPort.createRefreshToken(userKey);
-        String accessToken = socialAuthPort.createAccessToken(userKey);
+        userEmail = userPort.selectUserEmail(userKey);
+        String refreshToken = authPort.createRefreshToken(userKey);
+        String accessToken = authPort.createAccessToken(userKey);
 
         return SocialLoginResult.builder()
                 .userEmail(userEmail)

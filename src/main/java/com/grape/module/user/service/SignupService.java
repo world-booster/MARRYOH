@@ -1,7 +1,7 @@
 package com.grape.module.user.service;
 
 import com.grape.config.properties.DefaultUserProperties;
-import com.grape.module.user.adaptor.UserAuthPort;
+import com.grape.module.auth.adaptor.AuthPort;
 import com.grape.module.user.model.UserDto;
 import com.grape.module.user.repository.IUserRepository;
 import com.grape.utils.DateFormatter;
@@ -27,7 +27,7 @@ public class SignupService {
     private final Validator validator;
     private final PasswordEncoder passwordEncoder;
     private final DefaultUserProperties defaultUserProperties;
-    private final UserAuthPort userAuthPort;
+    private final AuthPort authPort;
 
     /* Regist user-info of common */
     public int signup(UserDto user){
@@ -55,7 +55,7 @@ public class SignupService {
         int result = userRepository.insertUser(user);
         if(result == 0) return 0;
 
-        String refreshToken = userAuthPort.createRefreshToken(user.getUserKey());
+        String refreshToken = authPort.createRefreshToken(user.getUserKey());
         if(refreshToken == null) return 0;
 
         return result;
@@ -79,7 +79,7 @@ public class SignupService {
         int result = userRepository.insertUser(user);
         if(result == 0) return null;
 
-        String refreshToken = userAuthPort.createRefreshToken(user.getUserKey());
+        String refreshToken = authPort.createRefreshToken(user.getUserKey());
         if(refreshToken == null) return null;
 
         return userKey;

@@ -2,7 +2,6 @@ package com.grape.module.user.service;
 
 import com.grape.module.user.exception.UserErrorCode;
 import com.grape.module.user.exception.UserException;
-import com.grape.module.user.adaptor.UserAuthPort;
 import com.grape.module.user.model.FindIdDto;
 import com.grape.module.user.model.ResetPwDto;
 import com.grape.module.user.model.UserDto;
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class FindUserInfoService {
 
-    private final UserAuthPort userAuthPort;
     private final IUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final Validator validator;
@@ -68,5 +66,19 @@ public class FindUserInfoService {
             return true;
         }
         return userRepository.existUserNickname(nickname);
+    }
+
+    public boolean existUserKey(String userKey){
+        if(userKey == null){
+         return false;
+        }
+        return userRepository.existUserKey(userKey);
+    }
+
+    public String selectUserEmail(String userKey){
+        if(userKey == null) {
+            return null;
+        }
+        return userRepository.selectUserEmail(userKey);
     }
 }
