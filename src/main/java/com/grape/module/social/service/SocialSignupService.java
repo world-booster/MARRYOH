@@ -1,8 +1,7 @@
 package com.grape.module.social.service;
 
 import com.grape.module.social.model.SocialProfile;
-import com.grape.module.social.model.SocialProvider;
-import com.grape.module.social.model.SocialSignupRequest;
+import com.grape.module.user.adaptor.UserPort;
 import com.grape.module.user.service.SignupService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -18,7 +17,7 @@ public class SocialSignupService {
 
     private static final Logger logger = LogManager.getLogger(SocialSignupService.class);
 
-    private final SignupService signupService; // will be updated that use port && adaptor structure
+    private final UserPort userPort;
     private final SocialAccountService socialAccountService;
 
     @Transactional
@@ -28,16 +27,14 @@ public class SocialSignupService {
         String email = profile.getEmail();
         String nickname = resolveNickname(profile);
 
-        logger.debug("social signup start userId ={}, email={}, nickname={}",userId,email,nickname);
-
-        String userKey = signupService.createSocialUser(
+        String userKey = userPort.createSocialUser(
                 userId,
                 email,
                 nickname
         );
-        logger.debug("createSocialUser success userKey={}", userKey);
+
         socialAccountService.insertSocialAccount(userKey, profile);
-        logger.debug("insertSocialAccount success userKey={}", userKey);
+
         return userKey;
     }
 

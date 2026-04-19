@@ -4,6 +4,7 @@ import com.grape.module.social.model.SocialAccount;
 import com.grape.module.social.model.SocialProfile;
 import com.grape.module.social.model.SocialProvider;
 import com.grape.module.social.repository.SocialAccountRepository;
+import com.grape.module.user.adaptor.UserPort;
 import com.grape.module.user.repository.IUserRepository;
 import com.grape.module.user.service.SignupService;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +22,7 @@ public class SocialAccountService {
     private static final Logger logger = LogManager.getLogger(SocialAccountService.class);
 
     private final SocialAccountRepository socialAccountRepository;
-    private final IUserRepository userRepository; // after -> change use port && adaptor structure
-
+    private final UserPort userPort;
 
     public SocialAccount findByProviderAndProviderUserId(SocialProvider provider, String providerUserId){
         return socialAccountRepository.findByProviderAndProviderUserId(provider, providerUserId);
@@ -53,7 +53,7 @@ public class SocialAccountService {
         // 무한 루프 방지 + JDK UUID 사용
         for(int i = 0; i < 10; i++) {
             String uuidV7 = UUID.randomUUID().toString().replace("-", "");
-            if(!userRepository.existUserKey(uuidV7)) {
+            if(!userPort.existUserKey(uuidV7)) {
                 return uuidV7;
             }
         }

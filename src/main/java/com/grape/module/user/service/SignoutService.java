@@ -1,6 +1,6 @@
 package com.grape.module.user.service;
 
-import com.grape.module.user.adaptor.UserAuthPort;
+import com.grape.module.auth.adaptor.AuthPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -8,12 +8,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SignoutService {
 
-    private final UserAuthPort userAuthPort;
+    private final AuthPort authPort;
 
     public void signout(String refreshToken){
         if(refreshToken == null) {
             return;
         }
-        userAuthPort.deleteTokenByToken(refreshToken);
+        authPort.deleteTokenByToken(refreshToken);
     }
 }
