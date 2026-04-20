@@ -1,7 +1,7 @@
 package com.grape.module.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.grape.module.auth.service.TokenService;
+import com.grape.module.auth.service.AuthService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
@@ -24,37 +24,29 @@ public class AuthController {
 
     private static final Logger logger = LogManager.getLogger(AuthController.class);
 
-    private final TokenService tokenService;
+    private final AuthService authService;
     private final ObjectMapper objectMapper; //임시 추후 DTO 형식으로 설계
 
     @PostMapping("/update-token")
     public ResponseEntity<?> updateToken(@CookieValue(value = "REFRESH-TOKEN", required = false) String refreshToken) {
+
+        if(refreshToken == null || refreshToken.isBlank()){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("RefreshToken is not existed.");
+        }
+
         try{
-            Claims claims = tokenService.parseJwtToken(refreshToken);
 
-            if(claims.getExpiration().before(new Date())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh 토큰 만료");
+            int check = authService.checkToken(refreshToken);
+            if(check == 0){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("RefreshToken is not Valid.");
             }
 
-            String userKey = claims.getSubject();
+            String userKey = authService.selectUserKeyByToken(refreshToken);
 
-            String storedHash = tokenService.selectRefreshToken(userKey);
-            if(storedHash == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh 토큰 없음");
-            }
-
-//            if(!authService.verifyRefreshToken(refreshToken, userKey)){
-//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh 토큰 불일치");
-//            }
-
-//            int newRefreshTokenResult = authService.createRefreshToken(userKey);
-//
-//            if(newRefreshTokenResult == 0){
-//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh 토큰 생성 실패");
-//            }
-
-            String newAccessToken = tokenService.jwtTokenGenerator(userKey);
-            String newRefreshToken = tokenService.selectRefreshToken(userKey);
+            String newAccessToken = authService.jwtTokenGenerator(userKey);
+            String newRefreshToken = authService.createRefreshToken(userKey);
 
             ResponseCookie cookie = ResponseCookie.from("REFRESH-TOKEN", newRefreshToken)
                     .httpOnly(true)
@@ -84,7 +76,7 @@ public class AuthController {
                         .body(Map.of("error", "email 값이 필요합니다."));
             }
 
-            tokenService.sendEmailVerification(email);
+            authService.sendEmailVerification(email);
             response.put("message", "인증 코드가 전송되었습니다.");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -97,7 +89,7 @@ public class AuthController {
     @PostMapping("/email-verify")
     public ResponseEntity<Map<String,String>> verifyEmailCode(@RequestParam String email, @RequestParam String code) {
         Map<String,String> response = new java.util.HashMap<>();
-        if (tokenService.verifyEmailCode(email, code)) {
+        if (authService.verifyEmailCode(email, code)) {
             response.put("message", "이메일 인증 완료");
             return ResponseEntity.ok(response);
         }
@@ -108,28 +100,22 @@ public class AuthController {
     @PostMapping("/refresh-token")
     public ResponseEntity<?> reCreateAccessToken(@CookieValue(value = "REFRESH-TOKEN", required = false) String refreshToken){
 
+        if(refreshToken == null || refreshToken.isBlank()){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh 토큰이 존재 하지 않습니다.");
+        }
+
         try{
-            if(refreshToken == null || refreshToken.isBlank()){
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh 토큰이 존재 하지 않습니다.");
+            int check = authService.checkToken(refreshToken);
+            if(check == 0){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("RefreshToken is not Valid.");
             }
 
-            int checkRefreshToken = tokenService.checkToken(refreshToken);
-            System.out.println("check DB: "+checkRefreshToken);
-            System.out.println("refreshToken: "+refreshToken);
-            String hashedToken = tokenService.hashRefreshToken(refreshToken);
-            String userKey = tokenService.selectUserKeyByToken(hashedToken);
+            String userKey = authService.selectUserKeyByToken(refreshToken);
 
-            if(userKey == null || userKey.isEmpty()){
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 Refresh 토큰입니다.");
-            }
-
-            tokenService.deleteToken(userKey);
-            String newRefreshToken = tokenService.createRefreshToken(userKey);
-            String newAccessToken = tokenService.jwtTokenGenerator(userKey);
-
-            if(newAccessToken == null || newAccessToken.isEmpty()){
-                throw new RuntimeException("accessToken 발급 실패");
-            }
+            authService.deleteToken(userKey);
+            String newRefreshToken = authService.createRefreshToken(userKey);
+            String newAccessToken = authService.jwtTokenGenerator(userKey);
 
             ResponseCookie cookie = ResponseCookie.from("REFRESH-TOKEN", newRefreshToken)
                     .httpOnly(true)

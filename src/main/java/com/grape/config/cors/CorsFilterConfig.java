@@ -9,6 +9,11 @@ import org.springframework.web.filter.CorsFilter;
 @Configuration
 public class CorsFilterConfig {
 
+
+    /*
+    * Level of development
+    * if want to convert operation level, change level of security to operation
+    * */
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
