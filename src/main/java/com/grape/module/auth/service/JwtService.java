@@ -1,11 +1,10 @@
 package com.grape.module.auth.service;
 
-import com.grape.config.security.jwt.JwtKeyProvider;
-import com.grape.config.security.jwt.JwtProperties;
+import com.grape.security.jwt.JwtKeyProvider;
+import com.grape.security.jwt.JwtProperties;
 import com.grape.module.auth.exception.AuthErrorCode;
 import com.grape.module.auth.exception.AuthException;
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

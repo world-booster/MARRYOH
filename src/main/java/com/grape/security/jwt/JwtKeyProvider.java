@@ -1,4 +1,4 @@
-package com.grape.config.security.jwt;
+package com.grape.security.jwt;
 
 import com.grape.module.auth.exception.AuthErrorCode;
 import com.grape.module.auth.exception.AuthException;

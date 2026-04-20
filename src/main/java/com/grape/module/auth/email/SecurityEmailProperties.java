@@ -1,4 +1,4 @@
-package com.grape.config.security;
+package com.grape.module.auth.email;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

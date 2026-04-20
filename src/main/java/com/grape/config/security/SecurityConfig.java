@@ -1,8 +1,7 @@
 package com.grape.config.security;
 
-import com.grape.config.security.filter.JwtAuthenticationFilter;
-import com.grape.config.security.jwt.JwtValidator;
-import com.grape.config.security.provider.JwtAuthenticationProvider;
+import com.grape.filter.JwtAuthenticationFilter;
+import com.grape.security.jwt.JwtAuthenticationProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

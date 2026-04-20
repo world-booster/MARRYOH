@@ -1,7 +1,5 @@
-package com.grape.config.security.provider;
+package com.grape.security.jwt;
 
-import com.grape.config.security.jwt.JwtParser;
-import com.grape.config.security.jwt.JwtValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -1,4 +1,4 @@
-package com.grape.config.security.jwt;
+package com.grape.security.jwt;
 
 import lombok.Getter;
 import lombok.Setter;

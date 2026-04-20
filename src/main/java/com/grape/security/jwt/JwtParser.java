@@ -1,11 +1,9 @@
-package com.grape.config.security.jwt;
+package com.grape.security.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.security.PublicKey;
 
 @Component
 @RequiredArgsConstructor

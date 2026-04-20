@@ -2,8 +2,7 @@ package com.grape.common.email;
 
 import com.grape.common.email.model.VerifyType;
 import com.grape.common.email.util.HashUtil;
-import com.grape.config.security.SecurityEmailProperties;
-import com.grape.module.auth.controller.AuthController;
+import com.grape.module.auth.email.SecurityEmailProperties;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
