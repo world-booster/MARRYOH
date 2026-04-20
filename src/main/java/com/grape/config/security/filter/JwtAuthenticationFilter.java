@@ -1,12 +1,16 @@
 package com.grape.config.security.filter;
 
-import com.grape.config.security.jwt.JwtVerifier;
+import com.grape.config.security.jwt.JwtValidator;
+import com.grape.config.security.provider.JwtAuthenticationProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,51 +22,29 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtVerifier jwtVerifier;
-    private final UserDetailsService userDetailsService;
+    private static final Logger logger = LogManager.getLogger(JwtAuthenticationFilter.class);
+
+    private final JwtAuthenticationProvider authenticationProvider;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
         String header = request.getHeader("Authorization");
 
-        if(header == null || !header.startsWith("Bearer ")){
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String token = header.substring(7);
-
         try{
-            if(SecurityContextHolder.getContext().getAuthentication() != null) {
-                filterChain.doFilter(request, response);
-                return;
+            if (header != null && header.startsWith("Bearer ")) {
+                String token = header.substring(7);
+
+                if(SecurityContextHolder.getContext().getAuthentication() == null) {
+                    Authentication authentication =
+                            authenticationProvider.authenticate(token, request);
+
+                    if(authentication != null) {
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
+                }
             }
-
-            if(!jwtVerifier.isValidAccessToken(token)){
-                filterChain.doFilter(request, response);
-                return;
-            }
-
-            String userKey = jwtVerifier.getUserKey(token);
-
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userKey);
-
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
-
-            authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
-            );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        }catch (Exception e){
-            SecurityContextHolder.clearContext(); //filter에서 예외X
+        } catch (Exception e) {
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);

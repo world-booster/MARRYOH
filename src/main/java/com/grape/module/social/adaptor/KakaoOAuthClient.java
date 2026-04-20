@@ -37,7 +37,12 @@ public class KakaoOAuthClient implements SocialOAuthClient {
 
     @Override
     public SocialProfile getProfile(SocialLoginCommand command) {
-        return null;
+
+        SocialTokenResponse tokenResponse = requestAccessToken(command.getCode());
+
+        KakaoUserResponse userResponse = requestUserInfo(tokenResponse.getAccessToken());
+
+        return toSocialProfile(userResponse);
     }
 
     private SocialTokenResponse requestAccessToken(String code) {
@@ -108,10 +113,18 @@ public class KakaoOAuthClient implements SocialOAuthClient {
     }
 
     private String extractEmail(KakaoUserResponse userResponse) {
-        if(userResponse.getKakaoAccount() == null) {
-            return null;
+//        if(userResponse.getKakaoAccount() == null) {
+//            return null;
+//        }
+//        return userResponse.getKakaoAccount().getEmail();
+
+        if (userResponse.getKakaoAccount() != null &&
+                userResponse.getKakaoAccount().getEmail() != null) {
+            return userResponse.getKakaoAccount().getEmail();
         }
-        return userResponse.getKakaoAccount().getEmail();
+
+        // 👉 여기서 fallback
+        return generateKakaoEmail(userResponse.getId());
     }
 
     private String extractNickname(KakaoUserResponse userResponse) {
@@ -126,5 +139,9 @@ public class KakaoOAuthClient implements SocialOAuthClient {
         }
 
         return null;
+    }
+
+    private String generateKakaoEmail(Long kakaoId) {
+        return "kakao_" + kakaoId + "@kakao.local";
     }
 }

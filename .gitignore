@@ -39,3 +39,7 @@ out/
 *.properties
 *.class
 /.metadata/
+
+### JWT Keys
+src/main/resources/keys
+*.pem

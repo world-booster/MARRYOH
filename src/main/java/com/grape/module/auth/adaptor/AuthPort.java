@@ -6,4 +6,5 @@ public interface AuthPort {
     String createAccessToken(String userKey);
     String jwtTokenGenerator(String userKey);
     int deleteTokenByToken(String refreshToken);
+
 }

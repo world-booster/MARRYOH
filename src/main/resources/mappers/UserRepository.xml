@@ -84,9 +84,6 @@
             USER_NAME,
             USER_RRM,
             PHONE_NUMBER,
-            SOCIAL_LOGIN_YN,
-            SOCIAL_PROVIDER,
-            SOCIAL_PROVIDER_KEY,
             USER_NICKNAME,
             USER_PROFILE_SEQ,
             SIGNUP_DT,
@@ -115,7 +112,6 @@
             SIGNUP_DT,
             LOGIN_AUTH,
             ADMIN_YN,
-            SOCIAL_LOGIN_YN
         FROM TB_USER_MST
         WHERE USER_KEY = #{userKey}
     </select>

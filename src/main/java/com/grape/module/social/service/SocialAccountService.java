@@ -5,8 +5,6 @@ import com.grape.module.social.model.SocialProfile;
 import com.grape.module.social.model.SocialProvider;
 import com.grape.module.social.repository.SocialAccountRepository;
 import com.grape.module.user.adaptor.UserPort;
-import com.grape.module.user.repository.IUserRepository;
-import com.grape.module.user.service.SignupService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
