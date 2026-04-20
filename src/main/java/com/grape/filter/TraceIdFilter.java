@@ -1,4 +1,4 @@
-package com.grape.config.filter;
+package com.grape.filter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
