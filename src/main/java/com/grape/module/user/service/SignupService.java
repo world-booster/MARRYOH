@@ -65,6 +65,10 @@ public class SignupService {
     public String createSocialUser(String userId, String userEmail, String userNickname) {
         String userKey = generateUuidV7();
 
+        if(userId == null || userEmail == null || userNickname == null){
+            //TODO: 소셜계정정보를 받아온게 null일때 처리
+        }
+
         UserDto user = UserDto.builder()
                 .userKey(userKey)
                 .signupDt(dateFormatter.getMariaDbDateTime())

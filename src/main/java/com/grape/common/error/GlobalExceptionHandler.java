@@ -25,7 +25,7 @@ public class GlobalExceptionHandler {
 
         /*  need stacktrace in operation level, use warn/error
         *  it is enough to use warn, if exception of business occurs */
-        logger.warn("Business exception: code={}, messge={}, path={}",
+        logger.warn("Business exception: code={}, message={}, path={}",
                 errorCode.code(), e.getMessage(), request.getRequestURI());
 
         return ResponseEntity.status(errorCode.httpStatus())
