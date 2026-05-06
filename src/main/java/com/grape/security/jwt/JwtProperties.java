@@ -15,4 +15,5 @@ public class JwtProperties {
     private String issuer = "grape";
     private String accessTokenType = "access";
     private String roleClaimName = "role";
+    private String roleUserClaimValue = "USER";
 }
