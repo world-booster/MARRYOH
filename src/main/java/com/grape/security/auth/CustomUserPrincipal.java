@@ -1,34 +1,35 @@
-package com.grape.module.user.security;
+package com.grape.security.auth;
 
-import com.grape.module.user.model.UserDto;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.List;
 
-public class CustomUserDetails implements UserDetails {
+@Getter
+@RequiredArgsConstructor
+public class CustomUserPrincipal implements UserDetails {
 
-    private final UserDto user;
+    private final String userKey;
+    private final String email;
+    private final String loginAuth;
 
-    public CustomUserDetails(UserDto user) {
-        this.user = user;
-    }
+    private final Collection<? extends GrantedAuthority> authorities;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        return authorities;
     }
 
     @Override
     public String getPassword() {
-        return user.getUserPw();
+        return null;
     }
 
     @Override
     public String getUsername() {
-        return user.getUserName();
+        return userKey;
     }
 
     @Override
@@ -49,9 +50,5 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
-    }
-
-    public UserDto getUser(){
-        return user;
     }
 }

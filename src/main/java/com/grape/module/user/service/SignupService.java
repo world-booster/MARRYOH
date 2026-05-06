@@ -60,7 +60,7 @@ public class SignupService {
         }
 
         String refreshToken = authPort.createRefreshToken(user.getUserKey());
-        if(refreshToken == null) return 0;
+        if(refreshToken == null) return 0; //TODO: 이후에 auth에서 잡고 없애기
 
         logger.info("success sign up, userKey={}",user.getUserKey());
 
