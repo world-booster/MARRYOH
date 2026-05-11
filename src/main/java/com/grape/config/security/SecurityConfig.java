@@ -30,9 +30,9 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/user/**").permitAll();
-                    auth.requestMatchers("/auth/**").permitAll();
-                    auth.requestMatchers("/social/**").permitAll();
+                    auth.requestMatchers("api/user/**").permitAll();
+                    auth.requestMatchers("api/auth/**").permitAll();
+                    auth.requestMatchers("api/social/**").permitAll();
                     auth.anyRequest().authenticated();
                 })
                 .addFilterBefore(
