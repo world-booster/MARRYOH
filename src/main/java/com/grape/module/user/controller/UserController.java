@@ -18,9 +18,8 @@ import java.util.Map;
  * 유저 상태 및 정보관련 CRUD 서비스 매핑
  * 회원가입, 로그인, 로그아웃, 마이페이지 조회, 회원 정보 수정, 회원 정보 검증
  * */
-@CrossOrigin(origins = "http://localhost:*")
 @RestController
-@RequestMapping("/user")
+@RequestMapping("api/user")
 @RequiredArgsConstructor
 @Validated
 public class UserController {
@@ -98,7 +97,20 @@ public class UserController {
 
         TokenDto tokenDto = signinService.signin(loginDto);
 
-        ResponseCookie cookie = ResponseCookie.from("REFRESH-TOKEN", tokenDto.getRefreshToken())
+        /* ACCESS TOKEN COOKIE */
+        ResponseCookie accessCookie = ResponseCookie.from(
+                        "ACCESS-TOKEN",
+                        tokenDto.getAccessToken()
+                )
+                .httpOnly(true)
+                .secure(false) // 개발환경 false / HTTPS 운영환경 true
+                .path("/")
+                .maxAge(60 * 60) // 1시간
+                .sameSite("Lax")
+                .build();
+
+        /* REFRESH TOKEN COOKIE */
+        ResponseCookie refreshCookie = ResponseCookie.from("REFRESH-TOKEN", tokenDto.getRefreshToken())
                 .httpOnly(true)
                 .secure(false)
                 .path("/")
@@ -106,10 +118,12 @@ public class UserController {
                 .sameSite("Lax")
                 .build();
 
-        response.put("accessToken", tokenDto.getAccessToken());
         response.put("message", "success");
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .headers(headers -> {
+                    headers.add(HttpHeaders.SET_COOKIE, accessCookie.toString());
+                    headers.add(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+                })
                 .body(response);
 
     }

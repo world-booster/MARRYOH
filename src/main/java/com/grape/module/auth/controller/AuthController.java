@@ -17,10 +17,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/auth")
+@RequestMapping("api/auth")
 public class AuthController {
 
     private static final Logger logger = LogManager.getLogger(AuthController.class);

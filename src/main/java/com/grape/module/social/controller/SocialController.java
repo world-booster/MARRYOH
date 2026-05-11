@@ -11,10 +11,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/social")
+@RequestMapping("api/social")
 public class SocialController {
 
     private final SocialLoginService socialLoginService;

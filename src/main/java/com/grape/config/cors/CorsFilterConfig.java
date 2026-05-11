@@ -20,6 +20,9 @@ public class CorsFilterConfig {
         config.setAllowCredentials(true);
         config.addAllowedOriginPattern("http://localhost:*");  // 모든 localhost 포트
         config.addAllowedOriginPattern("http://127.0.0.1:*");
+        config.addAllowedOriginPattern("http://192.168.45.2");
+        config.addAllowedOriginPattern("http://192.168.45.167");
+        config.addAllowedOriginPattern("http://192.168.0.2");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
