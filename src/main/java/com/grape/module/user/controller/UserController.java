@@ -3,6 +3,7 @@ package com.grape.module.user.controller;
 import com.grape.module.auth.model.TokenDto;
 import com.grape.module.user.model.*;
 import com.grape.module.user.service.*;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -92,7 +93,7 @@ public class UserController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<Map<String, String>> signin(@RequestBody LoginDto loginDto) {
+    public ResponseEntity<Map<String, String>> signin(@RequestBody LoginDto loginDto, HttpServletResponse servletResponse) {
         Map<String, String> response = new HashMap<>();
 
         TokenDto tokenDto = signinService.signin(loginDto);
@@ -118,22 +119,37 @@ public class UserController {
                 .sameSite("Lax")
                 .build();
 
+        /* 쿠키 직접 추가 */
+        servletResponse.addHeader(
+                HttpHeaders.SET_COOKIE,
+                accessCookie.toString()
+        );
+
+        servletResponse.addHeader(
+                HttpHeaders.SET_COOKIE,
+                refreshCookie.toString()
+        );
+
         response.put("message", "success");
-        return ResponseEntity.ok()
-                .headers(headers -> {
-                    headers.add(HttpHeaders.SET_COOKIE, accessCookie.toString());
-                    headers.add(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-                })
-                .body(response);
+
+        return ResponseEntity.ok(response);
 
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<Map<String, String>> signout(@CookieValue(value = "REFRESH-TOKEN", required = false) String refreshToken) {
+    public ResponseEntity<Map<String, String>> signout(@CookieValue(value = "REFRESH-TOKEN", required = false) String refreshToken, HttpServletResponse servletResponse) {
         Map<String, String> response = new HashMap<>();
         signoutService.signout(refreshToken);
 
-        ResponseCookie expiredCookie = ResponseCookie.from("REFRESH-TOKEN", "")
+        ResponseCookie expiredAccessCookie = ResponseCookie.from("ACCESS-TOKEN", "")
+                .path("/")
+                .httpOnly(true)
+                .maxAge(0)
+                .sameSite("Lax")
+                .secure(false)
+                .build();
+
+        ResponseCookie expiredRefreshCookie = ResponseCookie.from("REFRESH-TOKEN", "")
                 .path("/")
                 .httpOnly(true)
                 .maxAge(0)
@@ -141,9 +157,11 @@ public class UserController {
                 .secure(false) // 개발단계 : false , 운영 : true
                 .build();
 
+        servletResponse.addHeader(HttpHeaders.SET_COOKIE, expiredAccessCookie.toString());
+        servletResponse.addHeader(HttpHeaders.SET_COOKIE, expiredRefreshCookie.toString());
+
         response.put("message", "success");
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, expiredCookie.toString())
-                .body(response);
+
+        return ResponseEntity.ok(response);
     }
 }
