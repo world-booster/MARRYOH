@@ -46,8 +46,8 @@ public class JwtKeyProvider {
             try (InputStream is = resource.getInputStream()) {
                 String key = new String(is.readAllBytes(), StandardCharsets.UTF_8)
                         .replace("\uFEFF", "")
-                        .replaceAll("-----BEGIN (.*)-----", "")
-                        .replaceAll("-----END (.*)-----", "")
+                        .replaceAll("-----BEGIN PRIVATE KEY-----", "")
+                        .replaceAll("-----END PRIVATE KEY-----", "")
                         .replaceAll("\\s", "");
 
                 System.out.println("KEY LENGTH = " + key.length());
@@ -94,8 +94,8 @@ public class JwtKeyProvider {
         try (InputStream is = open(location)) {
             String key = new String(is.readAllBytes(), StandardCharsets.UTF_8)
                     .replace("\uFEFF", "")
-                    .replaceAll("-----BEGIN (.*)-----", "")
-                    .replaceAll("-----END (.*)-----", "")
+                    .replaceAll("-----BEGIN PUBLIC KEY-----", "")
+                    .replaceAll("-----END PUBLIC KEY-----", "")
                     .replaceAll("\\s", "");
 
             byte[] keyBytes = Base64.getDecoder().decode(key);

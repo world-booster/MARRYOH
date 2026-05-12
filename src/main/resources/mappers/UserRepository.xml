@@ -111,7 +111,7 @@
             USER_EMAIL,
             SIGNUP_DT,
             LOGIN_AUTH,
-            ADMIN_YN,
+            ADMIN_YN
         FROM TB_USER_MST
         WHERE USER_KEY = #{userKey}
     </select>

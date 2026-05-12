@@ -3,6 +3,7 @@ package com.grape.module.user.controller;
 import com.grape.module.auth.model.TokenDto;
 import com.grape.module.user.model.*;
 import com.grape.module.user.service.*;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -93,75 +95,84 @@ public class UserController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<Map<String, String>> signin(@RequestBody LoginDto loginDto, HttpServletResponse servletResponse) {
-        Map<String, String> response = new HashMap<>();
+    public ResponseEntity<Map<String, String>> signin(
+            @RequestBody LoginDto loginDto,
+            HttpServletResponse response
+    ) {
+
+        Map<String, String> body = new HashMap<>();
 
         TokenDto tokenDto = signinService.signin(loginDto);
 
-        /* ACCESS TOKEN COOKIE */
-        ResponseCookie accessCookie = ResponseCookie.from(
-                        "ACCESS-TOKEN",
-                        tokenDto.getAccessToken()
-                )
-                .httpOnly(true)
-                .secure(false) // 개발환경 false / HTTPS 운영환경 true
-                .path("/")
-                .maxAge(60 * 60) // 1시간
-                .sameSite("Lax")
-                .build();
-
-        /* REFRESH TOKEN COOKIE */
-        ResponseCookie refreshCookie = ResponseCookie.from("REFRESH-TOKEN", tokenDto.getRefreshToken())
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(7 * 24 * 60 * 60)
-                .sameSite("Lax")
-                .build();
-
-        /* 쿠키 직접 추가 */
-        servletResponse.addHeader(
-                HttpHeaders.SET_COOKIE,
-                accessCookie.toString()
+        Cookie accessCookie = new Cookie(
+                "ACCESS-TOKEN",
+                tokenDto.getAccessToken()
         );
 
-        servletResponse.addHeader(
-                HttpHeaders.SET_COOKIE,
-                refreshCookie.toString()
+        accessCookie.setHttpOnly(true);
+        accessCookie.setSecure(false);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(60 * 60);
+
+        Cookie refreshCookie = new Cookie(
+                "REFRESH-TOKEN",
+                tokenDto.getRefreshToken()
         );
 
-        response.put("message", "success");
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(false);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(7 * 24 * 60 * 60);
 
-        return ResponseEntity.ok(response);
+        response.addCookie(accessCookie);
+        response.addCookie(refreshCookie);
 
+        body.put("message", "success");
+
+        return ResponseEntity.ok(body);
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<Map<String, String>> signout(@CookieValue(value = "REFRESH-TOKEN", required = false) String refreshToken, HttpServletResponse servletResponse) {
-        Map<String, String> response = new HashMap<>();
+    public ResponseEntity<Map<String, String>> signout(
+            @CookieValue(
+                    value = "REFRESH-TOKEN",
+                    required = false
+            ) String refreshToken,
+
+            HttpServletResponse response
+    ) {
+
+        Map<String, String> body = new HashMap<>();
+
         signoutService.signout(refreshToken);
 
-        ResponseCookie expiredAccessCookie = ResponseCookie.from("ACCESS-TOKEN", "")
-                .path("/")
-                .httpOnly(true)
-                .maxAge(0)
-                .sameSite("Lax")
-                .secure(false)
-                .build();
+        /* ACCESS TOKEN 삭제 */
+        Cookie accessCookie = new Cookie(
+                "ACCESS-TOKEN",
+                ""
+        );
 
-        ResponseCookie expiredRefreshCookie = ResponseCookie.from("REFRESH-TOKEN", "")
-                .path("/")
-                .httpOnly(true)
-                .maxAge(0)
-                .sameSite("Lax") // 개발단계 : Lax , 운영 : strict
-                .secure(false) // 개발단계 : false , 운영 : true
-                .build();
+        accessCookie.setHttpOnly(true);
+        accessCookie.setSecure(false); // 운영 HTTPS 환경에서는 true
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(0);
 
-        servletResponse.addHeader(HttpHeaders.SET_COOKIE, expiredAccessCookie.toString());
-        servletResponse.addHeader(HttpHeaders.SET_COOKIE, expiredRefreshCookie.toString());
+        /* REFRESH TOKEN 삭제 */
+        Cookie refreshCookie = new Cookie(
+                "REFRESH-TOKEN",
+                ""
+        );
 
-        response.put("message", "success");
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(false); // 운영 HTTPS 환경에서는 true
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(0);
 
-        return ResponseEntity.ok(response);
+        response.addCookie(accessCookie);
+        response.addCookie(refreshCookie);
+
+        body.put("message", "success");
+
+        return ResponseEntity.ok(body);
     }
 }

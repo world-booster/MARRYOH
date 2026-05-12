@@ -20,13 +20,14 @@ public class JwtAuthenticationProvider {
 
     private final JwtParser jwtParser;
     private final UserDetailsService userDetailsService;
+    private final JwtProperties jwtProperties;
 
     public Authentication authenticate(String token, HttpServletRequest request) {
         try{
             Claims claims = jwtParser.parse(token);
 
             String type = claims.get("type", String.class);
-            if(!"ACCESS".equals(type)) {
+            if(type == null || !jwtProperties.getAccessTokenType().equalsIgnoreCase(type)) {
                 return null;
             }
 
