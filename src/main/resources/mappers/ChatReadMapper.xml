@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.grape.module.chat.repository.IChatReadRepository">
+
+    <!-- 읽음 존재 여부 -->
+    <select id="existMessageRead"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM TB_CHAT_MESSAGE_READ
+        WHERE MESSAGE_KEY = #{messageKey}
+        AND USER_KEY = #{userKey}
+
+    </select>
+
+    <!-- 읽음 저장 -->
+    <insert id="insertMessageRead">
+
+        INSERT INTO TB_CHAT_MESSAGE_READ (
+        MESSAGE_READ_KEY,
+        MESSAGE_KEY,
+        USER_KEY
+        )
+        VALUES (
+        #{messageReadKey},
+        #{messageKey},
+        #{userKey}
+        )
+
+    </insert>
+
+    <!-- 마지막 읽은 메시지 -->
+    <update id="updateLastReadMessage">
+
+        UPDATE TB_CHAT_ROOM_USER
+        SET
+        LAST_READ_MESSAGE_KEY = #{messageKey},
+        UPDATED_AT = NOW()
+        WHERE ROOM_KEY = #{roomKey}
+        AND USER_KEY = #{userKey}
+
+    </update>
+
+</mapper>
