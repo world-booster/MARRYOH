@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.grape.module.chat.repository.IChatMessageRepository">
+
+    <!-- 메시지 저장 -->
+    <insert id="insertMessage"
+            parameterType="com.grape.module.chat.model.ChatMessageDto">
+
+        INSERT INTO TB_CHAT_MESSAGE (
+        MESSAGE_KEY,
+        ROOM_KEY,
+        MESSAGE_TYPE,
+        SENDER_USER_KEY,
+        MESSAGE_CONTENT,
+        FILE_KEY
+        )
+        VALUES (
+        #{messageKey},
+        #{roomKey},
+        #{messageType},
+        #{senderUserKey},
+        #{messageContent},
+        #{fileKey}
+        )
+
+    </insert>
+
+    <!-- 메시지 목록 -->
+    <select id="selectMessageList"
+            parameterType="string"
+            resultType="com.grape.module.chat.model.ChatMessageDto">
+
+        SELECT
+        MESSAGE_KEY       AS messageKey,
+        ROOM_KEY          AS roomKey,
+        MESSAGE_TYPE      AS messageType,
+        SENDER_USER_KEY   AS senderUserKey,
+        MESSAGE_CONTENT   AS messageContent,
+        FILE_KEY          AS fileKey,
+        CREATED_AT        AS createdAt,
+        DELETED_YN        AS deletedYn
+        FROM TB_CHAT_MESSAGE
+        WHERE ROOM_KEY = #{roomKey}
+        AND DELETED_YN = 'N'
+        ORDER BY CREATED_AT ASC
+
+    </select>
+
+    <!-- 마지막 메시지 갱신 -->
+    <update id="updateLastMessage"
+            parameterType="com.grape.module.chat.model.ChatMessageDto">
+
+        UPDATE TB_CHAT_ROOM_MST
+        SET
+        LAST_MESSAGE_KEY = #{messageKey},
+        LAST_MESSAGE_CONTENT = #{messageContent},
+        LAST_MESSAGE_AT = NOW()
+        WHERE ROOM_KEY = #{roomKey}
+
+    </update>
+
+</mapper>
