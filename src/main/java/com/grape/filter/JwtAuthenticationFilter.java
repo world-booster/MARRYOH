@@ -28,6 +28,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         logger.info("JWT FILTER EXECUTED: {}", request.getRequestURI());
 
+        String path = request.getServletPath();
+
+        if(path.startsWith("/ws/")){
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try{
             String token = getAccessToken(request);
 
