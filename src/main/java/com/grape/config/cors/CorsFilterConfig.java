@@ -24,6 +24,7 @@ public class CorsFilterConfig {
         config.addAllowedOriginPattern("http://192.168.45.167");
         config.addAllowedOriginPattern("http://192.168.0.2");
         config.addAllowedOriginPattern("http://192.168.45.*:*");
+        config.addAllowedOriginPattern("http://39.115.15.99:*");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
