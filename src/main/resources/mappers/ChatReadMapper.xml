@@ -34,15 +34,73 @@
     </insert>
 
     <!-- 마지막 읽은 메시지 -->
-    <update id="updateLastReadMessage">
+    <update id="updateLastReadAt">
 
         UPDATE TB_CHAT_ROOM_USER
         SET
-        LAST_READ_MESSAGE_KEY = #{messageKey},
-        UPDATED_AT = NOW()
+            LAST_READ_AT = NOW(),
+            UPDATED_AT = NOW()
+
         WHERE ROOM_KEY = #{roomKey}
-        AND USER_KEY = #{userKey}
+            AND USER_KEY = #{userKey}
 
     </update>
+
+    <select id="selectLastMessageKey"
+            parameterType="string"
+            resultType="string">
+
+        SELECT MESSAGE_KEY
+        FROM TB_CHAT_MESSAGE
+        WHERE ROOM_KEY = #{roomKey}
+            AND DELETED_YN = 'N'
+        ORDER BY CREATED_AT DESC
+        LIMIT 1
+
+    </select>
+
+    <select id="selectUnreadMessageKeys"
+            resultType="string">
+
+        SELECT M.MESSAGE_KEY
+        FROM TB_CHAT_MESSAGE M
+        WHERE M.ROOM_KEY = #{roomKey}
+            AND M.SENDER_USER_KEY != #{userKey}
+            AND M.DELETED_YN = 'N'
+            AND M.CREATED_AT >
+        COALESCE(
+        (
+            SELECT LAST_READ_AT
+            FROM TB_CHAT_ROOM_USER
+            WHERE ROOM_KEY = #{roomKey}
+                AND USER_KEY = #{userKey}
+        ),
+        '1970-01-01'
+        )
+
+    </select>
+
+    <select id="selectReadCount" parameterType="string" resultType="int">
+
+        SELECT
+            GREATEST(
+                (
+                    SELECT COUNT(*)
+                    FROM TB_CHAT_ROOM_USER
+                    WHERE ROOM_KEY = M.ROOM_KEY
+                )
+                -
+                (
+                    SELECT COUNT(*)
+                    FROM TB_CHAT_MESSAGE_READ MR
+                    WHERE MR.MESSAGE_KEY = M.MESSAGE_KEY
+                )
+                - 1,
+                0
+        )
+        FROM TB_CHAT_MESSAGE M
+        WHERE M.MESSAGE_KEY = #{messageKey}
+
+    </select>
 
 </mapper>

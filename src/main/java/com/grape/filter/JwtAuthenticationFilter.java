@@ -1,5 +1,6 @@
 package com.grape.filter;
 
+import com.grape.security.auth.CustomUserPrincipal;
 import com.grape.security.jwt.JwtAuthenticationProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -38,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try{
             String token = getAccessToken(request);
 
-            logger.info("TOKEN = {}", token);
+            logger.info("TOKEN HASH= {}", token == null ? "NULL" : token.substring(0,20));
 
             if(token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 logger.info("TRY AUTHENTICATE");
@@ -48,7 +49,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 if(authentication != null) {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    logger.info("AUTH SUCCESS");
+
+                    CustomUserPrincipal user = (CustomUserPrincipal) authentication.getPrincipal();
+
+
+                    logger.info("AUTH USER = {} / {}", user.getUserKey(), user.getEmail());
                 }
             }
         } catch (Exception e) {

@@ -36,4 +36,19 @@ public class ChatPresenceService {
 
         return chatPresenceRepository.selectOnlineUsers();
     }
+
+    @Transactional
+    public void enterRoom(String userKey, String roomKey){
+        chatPresenceRepository.updateCurrentRoom(userKey, roomKey);
+    }
+
+    @Transactional
+    public void leaveRoom(String userKey){
+        chatPresenceRepository.clearCurrentRoom(userKey);
+    }
+
+    @Transactional
+    public int countUsersInRoom(String roomKey){
+        return chatPresenceRepository.countUsersInRoom(roomKey);
+    }
 }

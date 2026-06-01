@@ -2,6 +2,9 @@ package com.grape.module.chat.repository;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.security.core.parameters.P;
+
+import java.util.List;
 
 @Mapper
 public interface IChatReadRepository {
@@ -9,7 +12,7 @@ public interface IChatReadRepository {
     /*
      * 메시지 읽음 저장
      */
-    int insertMessageRead(
+    void insertMessageRead(
             @Param("messageReadKey") String messageReadKey,
             @Param("messageKey") String messageKey,
             @Param("userKey") String userKey
@@ -18,10 +21,9 @@ public interface IChatReadRepository {
     /*
      * 마지막 읽은 메시지 갱신
      */
-    int updateLastReadMessage(
+    void updateLastReadAt(
             @Param("roomKey") String roomKey,
-            @Param("userKey") String userKey,
-            @Param("messageKey") String messageKey
+            @Param("userKey") String userKey
     );
 
     /*
@@ -31,4 +33,10 @@ public interface IChatReadRepository {
             @Param("messageKey") String messageKey,
             @Param("userKey") String userKey
     );
+
+    String selectLastMessageKey(@Param("roomKey") String roomKey);
+
+    List<String> selectUnreadMessageKeys(@Param("roomKey") String roomKey, @Param("userKey") String userKey);
+
+    int selectReadCount(String messageKey);
 }

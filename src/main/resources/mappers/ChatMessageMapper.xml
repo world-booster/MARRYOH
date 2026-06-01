@@ -34,19 +34,53 @@
             parameterType="string"
             resultType="com.grape.module.chat.model.ChatMessageDto">
 
+        SELECT *
+        FROM (
+
         SELECT
-        MESSAGE_KEY       AS messageKey,
-        ROOM_KEY          AS roomKey,
-        MESSAGE_TYPE      AS messageType,
-        SENDER_USER_KEY   AS senderUserKey,
-        MESSAGE_CONTENT   AS messageContent,
-        FILE_KEY          AS fileKey,
-        CREATED_AT        AS createdAt,
-        DELETED_YN        AS deletedYn
-        FROM TB_CHAT_MESSAGE
-        WHERE ROOM_KEY = #{roomKey}
-        AND DELETED_YN = 'N'
-        ORDER BY CREATED_AT ASC
+        M.MESSAGE_KEY       AS messageKey,
+        M.ROOM_KEY          AS roomKey,
+        M.MESSAGE_TYPE      AS messageType,
+        M.SENDER_USER_KEY   AS senderUserKey,
+        M.MESSAGE_CONTENT   AS messageContent,
+        M.FILE_KEY          AS fileKey,
+        M.CREATED_AT        AS createdAt,
+        M.DELETED_YN        AS deletedYn,
+
+        U.USER_NICKNAME     AS senderNickname,
+
+        (
+        SELECT COUNT(*)
+        FROM TB_CHAT_ROOM_USER RU
+        WHERE RU.ROOM_KEY = M.ROOM_KEY
+        AND RU.EXITED_AT IS NULL
+        )
+        -
+        (
+        SELECT COUNT(*)
+        FROM TB_CHAT_MESSAGE_READ MR
+        WHERE MR.MESSAGE_KEY = M.MESSAGE_KEY
+        )
+        -
+        1
+
+        AS readCount
+
+        FROM TB_CHAT_MESSAGE M
+
+        INNER JOIN TB_USER_MST U
+        ON M.SENDER_USER_KEY = U.USER_KEY
+
+        WHERE M.ROOM_KEY = #{roomKey}
+        AND M.DELETED_YN = 'N'
+
+        ORDER BY M.CREATED_AT DESC
+
+        LIMIT 30
+
+        ) T
+
+        ORDER BY T.createdAt ASC
 
     </select>
 
@@ -62,5 +96,74 @@
         WHERE ROOM_KEY = #{roomKey}
 
     </update>
+
+    <select id="countRoomUsers"
+            parameterType="string"
+            resultType="int">
+
+        SELECT COUNT(*)
+
+        FROM TB_CHAT_ROOM_USER
+
+        WHERE ROOM_KEY = #{roomKey}
+        AND EXITED_AT IS NULL
+
+    </select>
+
+    <select id="getHistory"
+            resultType="com.grape.module.chat.model.response.ChatMessageResponse">
+
+        SELECT *
+        FROM (
+
+        SELECT
+        M.MESSAGE_KEY       AS messageKey,
+        M.ROOM_KEY          AS roomKey,
+        M.MESSAGE_TYPE      AS messageType,
+        M.SENDER_USER_KEY   AS senderUserKey,
+        M.MESSAGE_CONTENT   AS messageContent,
+        M.FILE_KEY          AS fileKey,
+        M.CREATED_AT        AS createdAt,
+
+        U.USER_NICKNAME     AS senderNickname,
+
+        (
+        SELECT COUNT(*)
+        FROM TB_CHAT_ROOM_USER RU
+        WHERE RU.ROOM_KEY = M.ROOM_KEY
+        AND RU.EXITED_AT IS NULL
+        )
+        -
+        (
+        SELECT COUNT(*)
+        FROM TB_CHAT_MESSAGE_READ MR
+        WHERE MR.MESSAGE_KEY = M.MESSAGE_KEY
+        )
+        -
+        1
+
+        AS readCount
+
+        FROM TB_CHAT_MESSAGE M
+
+        INNER JOIN TB_USER_MST U
+        ON M.SENDER_USER_KEY = U.USER_KEY
+
+        WHERE M.ROOM_KEY = #{roomKey}
+        AND M.DELETED_YN = 'N'
+
+        <if test="before != null">
+            AND M.CREATED_AT <![CDATA[ < ]]> #{before}
+        </if>
+
+        ORDER BY M.CREATED_AT DESC
+
+        LIMIT 30
+
+        ) T
+
+        ORDER BY T.createdAt ASC
+
+    </select>
 
 </mapper>

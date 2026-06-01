@@ -9,4 +9,5 @@ public interface UserPort {
     boolean existUserKey(String userKey);
     String createSocialUser(String userId, String userEmail, String userNickname);
     Optional<UserDto> selectUser(String userKey);
+    String selectUserNickname(String userKey);
 }

@@ -59,6 +59,10 @@
         SELECT USER_EMAIL FROM TB_USER_MST WHERE USER_KEY = #{userKey}
     </select>
 
+    <select id="selectUserNickname" parameterType="String" resultType="String">
+        SELECT USER_NICKNAME FROM TB_USER_MST WHERE USER_KEY = #{userKey}
+    </select>
+
     <select id="existUserId" parameterType="String" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM TB_USER_MST WHERE USER_ID = #{userId})
     </select>

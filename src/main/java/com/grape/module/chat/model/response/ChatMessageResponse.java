@@ -26,4 +26,6 @@ public class ChatMessageResponse {
     private String fileKey;
 
     private LocalDateTime createdAt;
+    private String senderNickname;
+    private Integer readCount;
 }
