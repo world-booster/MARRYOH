@@ -28,4 +28,8 @@ public class ChatMessageDto {
     private LocalDateTime createdAt;
 
     private String deletedYn;
+
+    private String senderNickname;
+
+    private Integer readCount;
 }

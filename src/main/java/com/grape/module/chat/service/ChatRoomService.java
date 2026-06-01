@@ -13,6 +13,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -72,12 +73,34 @@ public class ChatRoomService {
             chatRoomRepository.insertChatRoomUser(roomUser);
         }
 
-        return ChatRoomResponse.builder()
+        ChatRoomResponse response = ChatRoomResponse.builder()
                 .roomKey(chatRoom.getRoomKey())
                 .roomName(chatRoom.getRoomName())
                 .roomType(chatRoom.getRoomType())
                 .createdAt(chatRoom.getCreatedAt())
                 .build();
+
+        List<String> targetUsers = new ArrayList<>();
+        targetUsers.add(loginUserKey);
+        for (String userKey : request.getUserKeys()){
+            if(!targetUsers.contains(userKey)){
+                targetUsers.add(userKey);
+            }
+        }
+
+        SocketEvent<ChatRoomResponse> socketEvent = SocketEvent.<ChatRoomResponse>builder()
+                .eventType("ROOM_CREATED")
+                .payload(response)
+                .build();
+
+        for(String userKey : targetUsers){
+            messagingTemplate.convertAndSend(
+                    "/subscribe/users/" + userKey,
+                    socketEvent
+            );
+        }
+
+        return response;
     }
 
     @Transactional(readOnly = true)

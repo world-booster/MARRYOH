@@ -79,4 +79,39 @@
 
     </select>
 
+    <update id="updateCurrentRoom">
+
+        UPDATE TB_CHAT_PRESENCE
+        SET
+        CURRENT_ROOM_KEY = #{roomKey},
+        UPDATED_AT = NOW()
+
+        WHERE USER_KEY = #{userKey}
+
+    </update>
+
+    <update id="clearCurrentRoom">
+
+        UPDATE TB_CHAT_PRESENCE
+        SET
+        CURRENT_ROOM_KEY = NULL,
+        UPDATED_AT = NOW()
+
+        WHERE USER_KEY = #{userKey}
+
+    </update>
+
+    <select id="countUsersInRoom"
+            parameterType="string"
+            resultType="int">
+
+        SELECT COUNT(*)
+
+        FROM TB_CHAT_PRESENCE
+
+        WHERE CURRENT_ROOM_KEY = #{roomKey}
+        AND ONLINE_YN = 'Y'
+
+    </select>
+
 </mapper>

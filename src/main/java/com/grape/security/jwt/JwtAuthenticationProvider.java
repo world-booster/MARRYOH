@@ -53,4 +53,51 @@ public class JwtAuthenticationProvider {
             throw new AuthException(AuthErrorCode.TOKEN_INVALID_SIGNATURE);
         }
     }
+
+    public Authentication authenticate(String token){
+        try {
+
+            Claims claims = jwtParser.parse(token);
+
+            String type =
+                    claims.get("type", String.class);
+
+            if(
+                    type == null
+                            || !jwtProperties
+                            .getAccessTokenType()
+                            .equalsIgnoreCase(type)
+            ) {
+                return null;
+            }
+
+            String userKey =
+                    claims.get("userKey", String.class);
+
+            CustomUserPrincipal user =
+                    (CustomUserPrincipal)
+                            userDetailsService
+                                    .loadUserByUsername(
+                                            userKey
+                                    );
+
+            return new UsernamePasswordAuthenticationToken(
+                    user,
+                    null,
+                    user.getAuthorities()
+            );
+
+        } catch (ExpiredJwtException e) {
+
+            throw new AuthException(
+                    AuthErrorCode.TOKEN_EXPIRED
+            );
+
+        } catch (JwtException e) {
+
+            throw new AuthException(
+                    AuthErrorCode.TOKEN_INVALID_SIGNATURE
+            );
+        }
+    }
 }

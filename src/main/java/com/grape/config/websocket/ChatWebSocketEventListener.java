@@ -25,17 +25,20 @@ public class ChatWebSocketEventListener {
     public void handleConnect(SessionConnectEvent event){
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
 
-        Authentication authentication =
-                (Authentication) accessor.getUser();
+        log.info("WS USER = {}", accessor.getUser());
 
-        if(authentication == null){
-            return;
-        }
+//        Authentication authentication =
+//                (Authentication) accessor.getUser();
+//
+//        if(authentication == null){
+//            log.info("AUTH NULL");
+//            return;
+//        }
+//
+//        CustomUserPrincipal user =
+//                (CustomUserPrincipal) authentication.getPrincipal();
 
-        CustomUserPrincipal user =
-                (CustomUserPrincipal) authentication.getPrincipal();
-
-        String userKey = user.getUserKey();
+        String userKey = (String)accessor.getSessionAttributes().get("userKey");
         String sessionId = accessor.getSessionId();
 
         if(userKey == null){

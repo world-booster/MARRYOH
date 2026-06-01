@@ -8,11 +8,13 @@ import com.grape.module.chat.repository.IChatMessageRepository;
 import com.grape.module.chat.model.request.ChatMessageRequest;
 import com.grape.module.chat.model.response.ChatMessageResponse;
 import com.grape.module.chat.utils.ChatKeyGenerator;
+import com.grape.module.user.adaptor.UserPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -21,6 +23,8 @@ public class ChatMessageService {
 
     private final IChatMessageRepository chatMessageRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatPresenceService chatPresenceService;
+    private final UserPort userPort;
 
     @Transactional
     public ChatMessageResponse sendMessage(
@@ -29,6 +33,7 @@ public class ChatMessageService {
     ) {
 
         String messageKey = ChatKeyGenerator.generateMessageKey();
+        String nickname = userPort.selectUserNickname(userKey);
 
         ChatMessageDto chatMessage = ChatMessageDto.builder()
                 .messageKey(messageKey)
@@ -37,6 +42,8 @@ public class ChatMessageService {
                 .senderUserKey(userKey)
                 .messageContent(request.getMessageContent())
                 .fileKey(request.getFileKey())
+                .senderNickname(nickname)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         /*
@@ -57,11 +64,17 @@ public class ChatMessageService {
                 .messageContent(chatMessage.getMessageContent())
                 .fileKey(chatMessage.getFileKey())
                 .createdAt(chatMessage.getCreatedAt())
+                .senderNickname(chatMessage.getSenderNickname())
                 .build();
 
         /*
          * WebSocket Broadcast
          */
+
+        int totalUsers = chatMessageRepository.countRoomUsers(chatMessage.getRoomKey());
+        int activeUsers = chatPresenceService.countUsersInRoom(chatMessage.getRoomKey());
+        int unreadCount = Math.max(totalUsers - activeUsers, 0);
+
         ChatSocketMessageResponse socketPayload =
                 ChatSocketMessageResponse.builder()
                         .messageKey(chatMessage.getMessageKey())
@@ -71,6 +84,8 @@ public class ChatMessageService {
                         .messageContent(chatMessage.getMessageContent())
                         .fileKey(chatMessage.getFileKey())
                         .createdAt(chatMessage.getCreatedAt())
+                        .senderNickname(chatMessage.getSenderNickname())
+                        .readCount(unreadCount)
                         .build();
 
         SocketEvent<ChatSocketMessageResponse> socketEvent =
@@ -90,6 +105,7 @@ public class ChatMessageService {
     @Transactional
     public ChatSocketMessageResponse sendSocketMessage(ChatSocketMessageRequest request){
         String messageKey = ChatKeyGenerator.generateMessageKey();
+        String nickname = userPort.selectUserNickname(request.getSenderUserKey());
 
         ChatMessageDto chatMessage = ChatMessageDto.builder()
                 .messageKey(messageKey)
@@ -98,6 +114,8 @@ public class ChatMessageService {
                 .senderUserKey(request.getSenderUserKey())
                 .messageContent(request.getMessageContent())
                 .fileKey(request.getFileKey())
+                .senderNickname(nickname)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         chatMessageRepository.insertMessage(chatMessage);
@@ -112,6 +130,8 @@ public class ChatMessageService {
                 .messageContent(chatMessage.getMessageContent())
                 .fileKey(chatMessage.getFileKey())
                 .createdAt(chatMessage.getCreatedAt())
+                .senderNickname(chatMessage.getSenderNickname())
+                .readCount(chatMessage.getReadCount())
                 .build();
     }
 
@@ -128,8 +148,15 @@ public class ChatMessageService {
                         .messageContent(message.getMessageContent())
                         .fileKey(message.getFileKey())
                         .createdAt(message.getCreatedAt())
+                        .senderNickname(message.getSenderNickname())
+                        .readCount(message.getReadCount())
                         .build())
                 .toList();
+    }
+
+    @Transactional
+    public List<ChatMessageResponse> getHistory(String roomKey, LocalDateTime before){
+        return chatMessageRepository.getHistory(roomKey, before);
     }
 
 }

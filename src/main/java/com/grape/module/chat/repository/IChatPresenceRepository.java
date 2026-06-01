@@ -41,4 +41,8 @@ public interface IChatPresenceRepository {
      * 현재 접속 유저 조회
      */
     List<ChatPresenceDto> selectOnlineUsers();
+
+    void updateCurrentRoom(@Param("userKey") String userKey, @Param("roomKey") String roomKey);
+    void clearCurrentRoom(@Param("userKey") String userKey);
+    int countUsersInRoom(@Param("roomKey") String roomKey);
 }

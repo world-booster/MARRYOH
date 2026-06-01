@@ -1,8 +1,11 @@
 package com.grape.module.chat.repository;
 
 import com.grape.module.chat.model.ChatMessageDto;
+import com.grape.module.chat.model.response.ChatMessageResponse;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -23,4 +26,7 @@ public interface IChatMessageRepository {
      */
     int updateLastMessage(ChatMessageDto chatMessage);
 
+    int countRoomUsers(String roomKey);
+
+    List<ChatMessageResponse> getHistory(@Param("roomKey") String roomKey, @Param("before")LocalDateTime before);
 }

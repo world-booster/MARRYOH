@@ -34,4 +34,7 @@ public class UserAdaptor implements UserPort {
     public Optional<UserDto> selectUser(String userKey) {
         return findUserInfoService.selectUser(userKey);
     }
+
+    @Override
+    public String selectUserNickname(String userKey) {return findUserInfoService.findNickname(userKey);}
 }

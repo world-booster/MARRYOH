@@ -33,6 +33,10 @@ public class FindUserInfoService {
         return userId.substring(0,4) + "*".repeat(userId.length() - 4);
     }
 
+    public String findNickname(String userKey){
+        return userRepository.selectUserNickname(userKey);
+    }
+
     public int resetPassword(ResetPwDto resetPwDto){
         if(!resetPwDto.isVerified()){
             return 0;

@@ -26,4 +26,8 @@ public class ChatSocketMessageResponse {
     private String fileKey;
 
     private LocalDateTime createdAt;
+
+    private String senderNickname;
+
+    private Integer readCount;
 }

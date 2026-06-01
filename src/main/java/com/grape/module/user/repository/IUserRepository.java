@@ -18,6 +18,7 @@ public interface IUserRepository {
     int insertUser(UserDto user);
     String selectUserPw(String userId);
     String selectUserEmail(String userKey);
+    String selectUserNickname(String userKey);
     boolean existUserId(String userId);
     boolean existUserNickname(String userNickname);
     boolean existUserEmail(String userEmail);
