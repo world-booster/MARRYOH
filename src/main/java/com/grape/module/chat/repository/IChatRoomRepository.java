@@ -16,4 +16,7 @@ public interface IChatRoomRepository {
     ChatRoomDto selectChatRoom(String roomKey);
     List<ChatRoomDto> selectChatRoomList(String userKey);
     List<ChatRoomResponse> selectChatRoomResponseList(String userKey);
+    ChatRoomUserDto selectChatRoomUser(@Param("roomKey") String roomKey, @Param("userKey") String userKey);
+    int rejoinChatRoomUser(@Param("roomKey") String roomKey, @Param("userKey") String userKey);
+
 }

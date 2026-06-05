@@ -10,5 +10,6 @@ import lombok.NoArgsConstructor;
 public class ReadMessageRequest {
 
     private String roomKey;
+    private String messageKey;
 
 }

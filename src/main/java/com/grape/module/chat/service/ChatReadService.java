@@ -21,6 +21,7 @@ public class ChatReadService {
 
     @Transactional
     public void readMessage(String userKey, ReadMessageRequest request){
+
         List<String> unreadMessages = chatReadRepository.selectUnreadMessageKeys(request.getRoomKey(), userKey);
 
         for(String messageKey : unreadMessages){
@@ -50,10 +51,9 @@ public class ChatReadService {
                     event);
         }
 
-        String lastMessageKey = chatReadRepository.selectLastMessageKey(request.getRoomKey());
+        if(request.getMessageKey() != null){
 
-        if(lastMessageKey != null){
-            chatReadRepository.updateLastReadAt(request.getRoomKey(), userKey);
+            chatReadRepository.updateLastReadMessage(request.getRoomKey(), userKey, request.getMessageKey());
         }
     }
 }
