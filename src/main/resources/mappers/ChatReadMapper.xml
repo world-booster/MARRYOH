@@ -34,15 +34,17 @@
     </insert>
 
     <!-- 마지막 읽은 메시지 -->
-    <update id="updateLastReadAt">
+    <update id="updateLastReadMessage">
 
         UPDATE TB_CHAT_ROOM_USER
+
         SET
-            LAST_READ_AT = NOW(),
-            UPDATED_AT = NOW()
+        LAST_READ_MESSAGE_KEY = #{messageKey},
+        LAST_READ_AT = NOW(),
+        UPDATED_AT = NOW()
 
         WHERE ROOM_KEY = #{roomKey}
-            AND USER_KEY = #{userKey}
+        AND USER_KEY = #{userKey}
 
     </update>
 
@@ -64,19 +66,24 @@
 
         SELECT M.MESSAGE_KEY
         FROM TB_CHAT_MESSAGE M
+        JOIN TB_CHAT_ROOM_USER RU
+        ON RU.ROOM_KEY = M.ROOM_KEY
+        AND RU.USER_KEY = #{userKey}
         WHERE M.ROOM_KEY = #{roomKey}
-            AND M.SENDER_USER_KEY != #{userKey}
-            AND M.DELETED_YN = 'N'
-            AND M.CREATED_AT >
+        AND M.SENDER_USER_KEY != #{userKey}
+        AND M.DELETED_YN = 'N'
+        AND M.MESSAGE_TYPE != 'SYSTEM'
+        AND M.CREATED_AT >= RU.JOINED_AT
+        AND M.CREATED_AT >
         COALESCE(
         (
-            SELECT LAST_READ_AT
-            FROM TB_CHAT_ROOM_USER
-            WHERE ROOM_KEY = #{roomKey}
-                AND USER_KEY = #{userKey}
+        SELECT LM.CREATED_AT
+        FROM TB_CHAT_MESSAGE LM
+        WHERE LM.MESSAGE_KEY = RU.LAST_READ_MESSAGE_KEY
         ),
         '1970-01-01'
         )
+        ORDER BY M.CREATED_AT ASC
 
     </select>
 

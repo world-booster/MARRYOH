@@ -21,9 +21,10 @@ public interface IChatReadRepository {
     /*
      * 마지막 읽은 메시지 갱신
      */
-    void updateLastReadAt(
+    void updateLastReadMessage(
             @Param("roomKey") String roomKey,
-            @Param("userKey") String userKey
+            @Param("userKey") String userKey,
+            @Param("messageKey") String messageKey
     );
 
     /*

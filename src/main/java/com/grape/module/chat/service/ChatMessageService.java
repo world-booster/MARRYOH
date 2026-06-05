@@ -11,6 +11,7 @@ import com.grape.module.chat.utils.ChatKeyGenerator;
 import com.grape.module.user.adaptor.UserPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -100,6 +101,40 @@ public class ChatMessageService {
         );
 
         return response;
+    }
+
+    @Transactional
+    public void sendSystemMessage(String roomKey, String userKey, String content){
+        String messageKey = ChatKeyGenerator.generateMessageKey();
+
+        ChatMessageDto chatMessage = ChatMessageDto.builder()
+                .messageKey(messageKey)
+                .roomKey(roomKey)
+                .messageType("SYSTEM")
+                .senderUserKey(userKey)
+                .messageContent(content)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        chatMessageRepository.insertMessage(chatMessage);
+        chatMessageRepository.updateLastMessage(chatMessage);
+
+        ChatSocketMessageResponse socketPayload = ChatSocketMessageResponse.builder()
+                .messageKey(chatMessage.getMessageKey())
+                .roomKey(chatMessage.getRoomKey())
+                .senderUserKey(chatMessage.getSenderUserKey())
+                .messageType(chatMessage.getMessageType())
+                .messageContent(chatMessage.getMessageContent())
+                .createdAt(chatMessage.getCreatedAt())
+                .build();
+
+        SocketEvent<ChatSocketMessageResponse> socketEvent =
+                SocketEvent.<ChatSocketMessageResponse>builder()
+                        .eventType("MESSAGE")
+                        .payload(socketPayload)
+                        .build();
+
+        messagingTemplate.convertAndSend("/subscribe/chat/" + roomKey, socketEvent);
     }
 
     @Transactional

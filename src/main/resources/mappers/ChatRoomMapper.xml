@@ -144,4 +144,27 @@
 
     </update>
 
+    <select id="selectChatRoomUser" resultType="com.grape.module.chat.model.ChatRoomUserDto">
+
+        SELECT *
+        FROM TB_CHAT_ROOM_USER
+        WHERE ROOM_KEY = #{roomKey}
+        AND USER_KEY = #{userKey}
+
+    </select>
+
+    <update id="rejoinChatRoomUser">
+
+        UPDATE TB_CHAT_ROON_USER
+
+        SET
+            EXITED_AT = NULL,
+            JOINED_AT = NOW(),
+            UPDATED_AT = NOW()
+
+        WHERE ROOM_KEY = #{roomKey}
+        AND USER_KEY = #{userKey}
+
+    </update>
+
 </mapper>
