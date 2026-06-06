@@ -155,7 +155,7 @@
 
     <update id="rejoinChatRoomUser">
 
-        UPDATE TB_CHAT_ROON_USER
+        UPDATE TB_CHAT_ROOM_USER
 
         SET
             EXITED_AT = NULL,

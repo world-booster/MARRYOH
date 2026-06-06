@@ -24,10 +24,10 @@ public class ChatReadController {
         chatReadService.readMessage(user.getUserKey(), request);
     }
 
-    @MessageMapping("/chat/read")
-    public void readMessageSocket(Authentication authentication, ReadMessageRequest request){
-        CustomUserPrincipal user = (CustomUserPrincipal) authentication.getPrincipal();
-
-        chatReadService.readMessage(user.getUserKey(), request);
-    }
+//    @MessageMapping("/chat/read")
+//    public void readMessageSocket(Authentication authentication, ReadMessageRequest request){
+//        CustomUserPrincipal user = (CustomUserPrincipal) authentication.getPrincipal();
+//
+//        chatReadService.readMessage(user.getUserKey(), request);
+//    }
 }

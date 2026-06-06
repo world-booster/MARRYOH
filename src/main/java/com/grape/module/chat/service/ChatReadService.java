@@ -6,12 +6,14 @@ import com.grape.module.chat.model.response.ChatSocketMessageResponse;
 import com.grape.module.chat.repository.IChatReadRepository;
 import com.grape.module.chat.utils.ChatKeyGenerator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Log4j2
 @Service
 @RequiredArgsConstructor
 public class ChatReadService {
@@ -51,9 +53,22 @@ public class ChatReadService {
                     event);
         }
 
-        if(request.getMessageKey() != null){
+        String messageKey = request.getMessageKey();
 
-            chatReadRepository.updateLastReadMessage(request.getRoomKey(), userKey, request.getMessageKey());
+        log.info("REQUEST MESSAGE KEY = " + messageKey);
+
+        if(messageKey == null){
+            messageKey = chatReadRepository.selectLastMessageKey(request.getRoomKey());
+            log.info("DB LAST MESSAGE KEY = " + messageKey);
+        }
+
+        if(messageKey != null){
+
+            log.info("UPDATE PARAM roomKey={}, userKey={}, messageKey={}", request.getRoomKey(), userKey, messageKey);
+
+            int updated = chatReadRepository.updateLastReadMessage(request.getRoomKey(), userKey, messageKey);
+
+            log.info("UPDATED COUNT = {}", updated);
         }
     }
 }
