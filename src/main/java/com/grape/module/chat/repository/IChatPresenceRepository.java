@@ -40,7 +40,7 @@ public interface IChatPresenceRepository {
     /*
      * 현재 접속 유저 조회
      */
-    List<ChatPresenceDto> selectOnlineUsers();
+    List<ChatPresenceDto> selectAllPresenceUsers();
 
     void updateCurrentRoom(@Param("userKey") String userKey, @Param("roomKey") String roomKey);
     void clearCurrentRoom(@Param("userKey") String userKey);

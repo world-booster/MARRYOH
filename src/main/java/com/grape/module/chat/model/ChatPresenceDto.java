@@ -17,6 +17,8 @@ public class ChatPresenceDto {
 
     private String userEmail;
 
+    private String nickname;
+
     private String onlineYn;
 
     private String socketSessionId;
@@ -24,4 +26,6 @@ public class ChatPresenceDto {
     private LocalDateTime lastActiveAt;
 
     private LocalDateTime updatedAt;
+
+    private String currentRoomKey;
 }

@@ -1,5 +1,6 @@
 package com.grape.module.chat.controller;
 
+import com.grape.module.chat.model.ChatRoomParticipantDto;
 import com.grape.module.chat.model.request.ChatRoomRequest;
 import com.grape.module.chat.model.response.ChatRoomResponse;
 import com.grape.module.chat.service.ChatRoomService;
@@ -48,5 +49,11 @@ public class ChatRoomController {
         chatRoomService.exitRoom(roomKey, user.getUserKey());
 
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{roomKey}/participants")
+    public ResponseEntity<List<ChatRoomParticipantDto>> getRoomParticipants(@PathVariable String roomKey){
+
+        return ResponseEntity.ok(chatRoomService.getRoomParticipants(roomKey));
     }
 }

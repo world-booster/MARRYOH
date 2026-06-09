@@ -32,9 +32,9 @@ public class ChatPresenceService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChatPresenceDto> getOnlineUsers(){
+    public List<ChatPresenceDto> getAllPresenceUsers(){
 
-        return chatPresenceRepository.selectOnlineUsers();
+        return chatPresenceRepository.selectAllPresenceUsers();
     }
 
     @Transactional

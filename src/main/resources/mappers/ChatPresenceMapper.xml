@@ -79,6 +79,37 @@
 
     </select>
 
+    <select id="selectAllPresenceUsers"
+            resultType="com.grape.module.chat.model.ChatPresenceDto">
+
+        SELECT
+        U.USER_KEY AS userKey,
+        U.USER_EMAIL AS userEmail,
+        U.USER_NICKNAME AS nickname,
+
+        CASE
+        WHEN P.ONLINE_YN = 'Y' THEN 'Y'
+        ELSE 'N'
+        END AS onlineYn,
+
+        P.SOCKET_SESSION_ID AS socketSessionId,
+        P.LAST_ACTIVE_AT AS lastActiveAt,
+        P.UPDATED_AT AS updatedAt,
+        P.CURRENT_ROOM_KEY AS currentRoomKey
+
+        FROM TB_USER_MST U
+        LEFT JOIN TB_CHAT_PRESENCE P
+        ON U.USER_KEY = P.USER_KEY
+
+        ORDER BY
+        CASE
+        WHEN P.ONLINE_YN = 'Y' THEN 0
+        ELSE 1
+        END,
+        U.USER_NICKNAME ASC
+
+    </select>
+
     <update id="updateCurrentRoom">
 
         UPDATE TB_CHAT_PRESENCE

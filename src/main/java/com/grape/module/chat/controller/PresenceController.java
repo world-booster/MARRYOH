@@ -18,7 +18,7 @@ public class PresenceController {
 
         messagingTemplate.convertAndSend(
                 "/subscribe/presence",
-                chatPresenceService.getOnlineUsers()
+                chatPresenceService.getAllPresenceUsers()
         );
     }
 }
