@@ -171,4 +171,9 @@ public class ChatRoomService {
         chatMessageService.sendSystemMessage(roomKey, userKey, nickname + "님이 나갔습니다.");
     }
 
+    @Transactional(readOnly = true)
+    public List<ChatRoomParticipantDto> getRoomParticipants(String roomKey){
+        return chatRoomRepository.selectRoomParticipants(roomKey);
+    }
+
 }

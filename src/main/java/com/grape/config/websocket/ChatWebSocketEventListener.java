@@ -49,7 +49,7 @@ public class ChatWebSocketEventListener {
 
         messagingTemplate.convertAndSend(
                 "/subscribe/presence",
-                chatPresenceService.getOnlineUsers()
+                chatPresenceService.getAllPresenceUsers()
         );
 
         log.info("웹소켓 연결 : {}", userKey);
@@ -61,7 +61,7 @@ public class ChatWebSocketEventListener {
         chatPresenceService.disconnect(sessionId);
         messagingTemplate.convertAndSend(
                 "/subscribe/presence",
-                chatPresenceService.getOnlineUsers()
+                chatPresenceService.getAllPresenceUsers()
         );
         log.info("웹소켓 종료 : {}", sessionId);
     }

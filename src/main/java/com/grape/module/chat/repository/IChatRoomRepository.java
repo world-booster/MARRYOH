@@ -1,6 +1,7 @@
 package com.grape.module.chat.repository;
 
 import com.grape.module.chat.model.ChatRoomDto;
+import com.grape.module.chat.model.ChatRoomParticipantDto;
 import com.grape.module.chat.model.ChatRoomUserDto;
 import com.grape.module.chat.model.response.ChatRoomResponse;
 import org.apache.ibatis.annotations.Mapper;
@@ -18,5 +19,5 @@ public interface IChatRoomRepository {
     List<ChatRoomResponse> selectChatRoomResponseList(String userKey);
     ChatRoomUserDto selectChatRoomUser(@Param("roomKey") String roomKey, @Param("userKey") String userKey);
     int rejoinChatRoomUser(@Param("roomKey") String roomKey, @Param("userKey") String userKey);
-
+    List<ChatRoomParticipantDto> selectRoomParticipants(@Param("roomKey") String roomKey);
 }

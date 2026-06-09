@@ -167,4 +167,20 @@
 
     </update>
 
+    <select id="selectRoomParticipants"
+            parameterType="string"
+            resultType="com.grape.module.chat.model.ChatRoomParticipantDto">
+
+        SELECT
+            U.USER_KEY AS userKey,
+            U.USER_EMAIL AS userEmail,
+            U.USER_NICKNAME AS nickname
+        FROM TB_CHAT_ROOM_USER RU
+        JOIN TB_USER_MST U
+            ON RU.USER_KEY = U.USER_KEY
+        WHERE RU.ROOM_KEY = #{roomKey}
+        ORDER BY U.USER_NICKNAME ASC
+
+    </select>
+
 </mapper>
