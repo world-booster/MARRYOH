@@ -71,4 +71,10 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+tasks.processResources {
+	exclude("application.properties")
+	exclude("database.properties")
+	exclude("keys/private.pem")
+	exclude("keys/public.pem")
+}
 
