@@ -6,6 +6,7 @@ import com.grape.module.social.service.SocialSignupService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,8 @@ import java.util.Map;
 public class SocialController {
 
     private final SocialLoginService socialLoginService;
+    @Value("${app.cookie.secure}")
+    private boolean cookieSecure;
 
     @PostMapping("/{provider}/login")
     public ResponseEntity<SocialLoginResult> login(
@@ -33,10 +36,21 @@ public class SocialController {
         SocialLoginResult result = socialLoginService.login(command);
 
         Cookie cookie = new Cookie("REFRESH-TOKEN", result.getRefreshToken());
+        cookie.setSecure(cookieSecure);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         cookie.setMaxAge(60 * 60 * 24 * 14);
         response.addCookie(cookie);
+
+        Cookie accessCookie =
+                new Cookie("ACCESS-TOKEN", result.getAccessToken());
+
+        accessCookie.setHttpOnly(true);
+        accessCookie.setSecure(cookieSecure);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(60 * 60);
+
+        response.addCookie(accessCookie);
 
         return ResponseEntity.ok(result);
     }

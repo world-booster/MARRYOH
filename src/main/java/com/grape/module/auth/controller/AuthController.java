@@ -6,6 +6,7 @@ import com.grape.module.auth.service.AuthService;
 import com.grape.security.auth.CustomUserPrincipal;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -26,6 +27,8 @@ public class AuthController {
 
     private final AuthService authService;
     private final ObjectMapper objectMapper; //임시 추후 DTO 형식으로 설계
+    @Value("${app.cookie.secure}")
+    private boolean cookieSecure;
 
     @GetMapping("/me")
     public ResponseEntity<AuthUserResponse> me(Authentication authentication) {
@@ -97,7 +100,7 @@ public class AuthController {
 
             ResponseCookie accessCookie = ResponseCookie.from("ACCESS-TOKEN", newAccessToken)
                     .httpOnly(true)
-                    .secure(false) //HTTPS (개발단계 false)
+                    .secure(cookieSecure) //HTTPS (개발단계 false)
                     .path("/")
                     .maxAge(7*24*60*60) //7일
                     .sameSite("Lax") // 개발단계 : Lax , 실무 : strict
@@ -105,7 +108,7 @@ public class AuthController {
 
             ResponseCookie refreshCookie = ResponseCookie.from("REFRESH-TOKEN", newRefreshToken)
                     .httpOnly(true)
-                    .secure(false) //HTTPS (개발단계 false)
+                    .secure(cookieSecure) //HTTPS (개발단계 false)
                     .path("/")
                     .maxAge(7*24*60*60) //7일
                     .sameSite("Lax") // 개발단계 : Lax , 실무 : strict

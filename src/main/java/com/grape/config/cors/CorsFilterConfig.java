@@ -25,6 +25,8 @@ public class CorsFilterConfig {
         config.addAllowedOriginPattern("http://192.168.0.2");
         config.addAllowedOriginPattern("http://192.168.45.*:*");
         config.addAllowedOriginPattern("http://39.115.15.99:*");
+        config.addAllowedOriginPattern("https://www.angdooz.com");
+        config.addAllowedOriginPattern("https://angdooz.com");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
