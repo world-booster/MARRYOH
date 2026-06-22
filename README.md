@@ -1,6 +1,6 @@
 ## 1. 프로젝트 소개
 
-운영링크: https://angdooz.co.kr  
+운영링크: https://angdooz.com  
 로그인 Front-end Git: https://github.com/kiyoungboy/grape_front  
 채팅 Front-end Git: https://github.com/kiyoungboy/grape_chat_front  
 개발기간: 2025/11 ~ ing  
