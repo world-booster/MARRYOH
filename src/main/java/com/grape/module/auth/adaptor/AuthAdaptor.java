@@ -27,4 +27,10 @@ public class AuthAdaptor implements AuthPort{
     public int deleteTokenByToken(String refreshToken) {
         return authService.deleteTokenByToken(refreshToken);
     }
+
+    @Override
+    public String createCsrfToken() { return authService.createCsrfToken(); }
+
+    @Override
+    public boolean validateCsrfToken(String csrfToken) { return authService.validateCsrfToken(csrfToken); }
 }

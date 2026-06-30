@@ -97,12 +97,13 @@ public class AuthController {
             authService.deleteToken(userKey);
             String newRefreshToken = authService.createRefreshToken(userKey);
             String newAccessToken = authService.jwtTokenGenerator(userKey);
+            String newCsrfToken = authService.createCsrfToken();
 
             ResponseCookie accessCookie = ResponseCookie.from("ACCESS-TOKEN", newAccessToken)
                     .httpOnly(true)
                     .secure(cookieSecure) //HTTPS (개발단계 false)
                     .path("/")
-                    .maxAge(7*24*60*60) //7일
+                    .maxAge(60*60) //1시간
                     .sameSite("Lax") // 개발단계 : Lax , 실무 : strict
                     .build();
 
@@ -114,9 +115,18 @@ public class AuthController {
                     .sameSite("Lax") // 개발단계 : Lax , 실무 : strict
                     .build();
 
+            ResponseCookie csrfCookie = ResponseCookie.from("CSRF-TOKEN", newCsrfToken)
+                    .httpOnly(false)
+                    .secure(cookieSecure)
+                    .path("/")
+                    .maxAge(7*24*60*60)
+                    .sameSite("Lax")
+                    .build();
+
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                     .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, csrfCookie.toString())
                     .build();
 
         } catch (JwtException e){

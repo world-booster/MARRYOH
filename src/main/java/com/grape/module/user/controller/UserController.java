@@ -1,11 +1,14 @@
 package com.grape.module.user.controller;
 
+import com.grape.module.auth.adaptor.AuthPort;
 import com.grape.module.auth.model.TokenDto;
 import com.grape.module.user.model.*;
 import com.grape.module.user.service.*;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.codec.binary.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -32,6 +35,9 @@ public class UserController {
     private final SigninService signinService;
     private final SignoutService signoutService;
     private final FindUserInfoService findUserInfoService;
+    private final AuthPort authPort;
+    @Value("${app.cookie.secure}")
+    private boolean cookieSecure;
 
     @PostMapping("/verificator-id")
     public ResponseEntity<Map<String, String>> verificateId(@RequestBody String userId) {
@@ -111,7 +117,7 @@ public class UserController {
         );
 
         accessCookie.setHttpOnly(true);
-        accessCookie.setSecure(false);
+        accessCookie.setSecure(cookieSecure);
         accessCookie.setPath("/");
         accessCookie.setMaxAge(60 * 60);
 
@@ -121,12 +127,21 @@ public class UserController {
         );
 
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(false);
+        refreshCookie.setSecure(cookieSecure);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(7 * 24 * 60 * 60);
 
+        String csrfToken = authPort.createCsrfToken();
+        Cookie csrfCookie = new Cookie("CSRF-TOKEN", csrfToken);
+
+        csrfCookie.setHttpOnly(false);
+        csrfCookie.setSecure(cookieSecure);
+        csrfCookie.setPath("/");
+        csrfCookie.setMaxAge(7 * 7 * 60 * 60);
+
         response.addCookie(accessCookie);
         response.addCookie(refreshCookie);
+        response.addCookie(csrfCookie);
 
         body.put("message", "success");
 
@@ -154,7 +169,7 @@ public class UserController {
         );
 
         accessCookie.setHttpOnly(true);
-        accessCookie.setSecure(false); // 운영 HTTPS 환경에서는 true
+        accessCookie.setSecure(cookieSecure); // 운영 HTTPS 환경에서는 true
         accessCookie.setPath("/");
         accessCookie.setMaxAge(0);
 
@@ -165,12 +180,22 @@ public class UserController {
         );
 
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(false); // 운영 HTTPS 환경에서는 true
+        refreshCookie.setSecure(cookieSecure); // 운영 HTTPS 환경에서는 true
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(0);
 
         response.addCookie(accessCookie);
         response.addCookie(refreshCookie);
+
+        Cookie csrfCookie = new Cookie(
+                "CSRF-TOKEN",
+                ""
+        );
+
+        csrfCookie.setHttpOnly(false);
+        csrfCookie.setSecure(cookieSecure);
+        csrfCookie.setPath("/");
+        csrfCookie.setMaxAge(0);
 
         body.put("message", "success");
 

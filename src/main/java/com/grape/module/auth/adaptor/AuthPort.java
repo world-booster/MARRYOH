@@ -6,5 +6,7 @@ public interface AuthPort {
     String createAccessToken(String userKey);
     String jwtTokenGenerator(String userKey);
     int deleteTokenByToken(String refreshToken);
+    String createCsrfToken();
+    boolean validateCsrfToken(String csrfToken);
 
 }
