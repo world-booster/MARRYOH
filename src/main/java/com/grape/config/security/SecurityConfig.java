@@ -1,5 +1,6 @@
 package com.grape.config.security;
 
+import com.grape.filter.CsrfFilter;
 import com.grape.filter.JwtAuthenticationFilter;
 import com.grape.security.jwt.JwtAuthenticationProvider;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationProvider jwtAuthenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CsrfFilter csrfFilter;
 
 
     @Bean
@@ -34,8 +36,13 @@ public class SecurityConfig {
                     auth.requestMatchers("/api/social/**").permitAll();
                     auth.requestMatchers("/api/chat/**").permitAll();
                     auth.requestMatchers("/ws/**").permitAll();
+                    auth.requestMatchers("/api/friend/**").permitAll();
                     auth.anyRequest().authenticated();
                 })
+                .addFilterBefore(
+                        csrfFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class

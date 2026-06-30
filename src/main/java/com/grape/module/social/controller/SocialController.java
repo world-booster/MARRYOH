@@ -1,5 +1,6 @@
 package com.grape.module.social.controller;
 
+import com.grape.module.auth.adaptor.AuthPort;
 import com.grape.module.social.model.*;
 import com.grape.module.social.service.SocialLoginService;
 import com.grape.module.social.service.SocialSignupService;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class SocialController {
 
     private final SocialLoginService socialLoginService;
+    private final AuthPort authPort;
     @Value("${app.cookie.secure}")
     private boolean cookieSecure;
 
@@ -40,6 +42,7 @@ public class SocialController {
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         cookie.setMaxAge(60 * 60 * 24 * 14);
+
         response.addCookie(cookie);
 
         Cookie accessCookie =
@@ -51,6 +54,16 @@ public class SocialController {
         accessCookie.setMaxAge(60 * 60);
 
         response.addCookie(accessCookie);
+
+        String csrfToken = authPort.createCsrfToken();
+        Cookie csrfCookie = new Cookie("CSRF-TOKEN", csrfToken);
+
+        csrfCookie.setPath("/");
+        csrfCookie.setHttpOnly(false);
+        csrfCookie.setSecure(cookieSecure);
+        csrfCookie.setMaxAge(60*60*24*14);
+
+        response.addCookie(csrfCookie);
 
         return ResponseEntity.ok(result);
     }

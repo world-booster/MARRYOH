@@ -12,6 +12,7 @@ public class AuthService {
 
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final CsrfTokenService csrfTokenService;
 
     private final EmailVerificationService email;
 
@@ -58,4 +59,8 @@ public class AuthService {
     public boolean verifyEmailCode(String email, String code) {
         return this.email.verify(email, VerifyType.USER, code);
     }
+
+    public String createCsrfToken(){ return csrfTokenService.createCsrfToken(); }
+
+    public boolean validateCsrfToken(String csrfToken){ return csrfTokenService.validateCsrfToken(csrfToken);}
 }
