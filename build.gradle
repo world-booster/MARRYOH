@@ -71,7 +71,14 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
-tasks.processResources {
+tasks.bootJar {
+	exclude("application.properties")
+	exclude("database.properties")
+	exclude("keys/private.pem")
+	exclude("keys/public.pem")
+}
+
+tasks.jar {
 	exclude("application.properties")
 	exclude("database.properties")
 	exclude("keys/private.pem")

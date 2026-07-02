@@ -2,7 +2,7 @@ package com.grape.module.friend.service;
 
 import com.grape.module.friend.model.FriendDto;
 import com.grape.module.friend.model.FriendListResponse;
-import com.grape.module.friend.model.FriendReqeustResponse;
+import com.grape.module.friend.model.FriendRequestResponse;
 import com.grape.module.friend.model.FriendSearchResponse;
 import com.grape.module.friend.repository.IFriendRepository;
 import lombok.RequiredArgsConstructor;
@@ -87,7 +87,7 @@ public class FriendService {
         friendRepository.insertFriendRequest(friendDto);
     }
 
-    public List<FriendReqeustResponse> getReceivedRequests(String myUserKey){
+    public List<FriendRequestResponse> getReceivedRequests(String myUserKey){
         return friendRepository.selectReceivedFriendRequests(myUserKey);
     }
 
