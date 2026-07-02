@@ -2,7 +2,7 @@ package com.grape.module.friend.repository;
 
 import com.grape.module.friend.model.FriendDto;
 import com.grape.module.friend.model.FriendListResponse;
-import com.grape.module.friend.model.FriendReqeustResponse;
+import com.grape.module.friend.model.FriendRequestResponse;
 import com.grape.module.friend.model.FriendSearchResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -29,7 +29,7 @@ public interface IFriendRepository {
 
     int insertFriendRequest(FriendDto friendDto);
 
-    List<FriendReqeustResponse> selectReceivedFriendRequests(
+    List<FriendRequestResponse> selectReceivedFriendRequests(
             @Param("myUserKey") String myUserKey
     );
 
