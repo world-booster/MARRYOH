@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.grape.module.chat.repository.IChatRoomRepository">
+
+    <!-- 채팅방 생성 -->
+    <insert id="insertChatRoom"
+            parameterType="com.grape.module.chat.model.ChatRoomDto">
+
+        INSERT INTO TB_CHAT_ROOM_MST (
+        ROOM_KEY,
+        ROOM_NAME,
+        ROOM_TYPE,
+        CREATED_USER_KEY
+        )
+        VALUES (
+        #{roomKey},
+        #{roomName},
+        #{roomType},
+        #{createdUserKey}
+        )
+
+    </insert>
+
+    <!-- 채팅방 참여자 추가 -->
+    <insert id="insertChatRoomUser"
+            parameterType="com.grape.module.chat.model.ChatRoomUserDto">
+
+        INSERT INTO TB_CHAT_ROOM_USER (
+        ROOM_USER_KEY,
+        ROOM_KEY,
+        USER_KEY
+        )
+        VALUES (
+        #{roomUserKey},
+        #{roomKey},
+        #{userKey}
+        )
+
+    </insert>
+
+    <!-- 채팅방 단건 조회 -->
+    <select id="selectChatRoom"
+            parameterType="string"
+            resultType="com.grape.module.chat.model.ChatRoomDto">
+
+        SELECT
+        ROOM_KEY              AS roomKey,
+        ROOM_NAME             AS roomName,
+        ROOM_TYPE             AS roomType,
+        CREATED_USER_KEY      AS createdUserKey,
+        LAST_MESSAGE_KEY      AS lastMessageKey,
+        LAST_MESSAGE_CONTENT  AS lastMessageContent,
+        LAST_MESSAGE_AT       AS lastMessageAt,
+        CREATED_AT            AS createdAt,
+        UPDATED_AT            AS updatedAt,
+        DELETED_YN            AS deletedYn
+        FROM TB_CHAT_ROOM_MST
+        WHERE ROOM_KEY = #{roomKey}
+
+    </select>
+
+    <!-- 유저 채팅방 목록 조회 -->
+    <select id="selectChatRoomList"
+            parameterType="string"
+            resultType="com.grape.module.chat.model.ChatRoomDto">
+
+        SELECT
+        A.ROOM_KEY,
+        A.ROOM_NAME,
+        A.ROOM_TYPE,
+        A.CREATED_USER_KEY,
+        A.LAST_MESSAGE_KEY,
+        A.LAST_MESSAGE_CONTENT,
+        A.LAST_MESSAGE_AT,
+        A.CREATED_AT,
+        A.UPDATED_AT,
+        A.DELETED_YN
+        FROM TB_CHAT_ROOM_MST A
+        INNER JOIN TB_CHAT_ROOM_USER B
+        ON A.ROOM_KEY = B.ROOM_KEY
+        WHERE B.USER_KEY = #{userKey}
+        AND A.DELETED_YN = 'N'
+        AND B.EXITED_AT IS NULL
+        ORDER BY A.LAST_MESSAGE_AT DESC
+
+    </select>
+
+    <!-- 채팅방 목록 + 안읽은 수 -->
+    <select id="selectChatRoomResponseList"
+            parameterType="string"
+            resultType="com.grape.module.chat.model.response.ChatRoomResponse">
+
+        SELECT
+        A.ROOM_KEY                AS roomKey,
+        A.ROOM_NAME               AS roomName,
+        A.ROOM_TYPE               AS roomType,
+        A.LAST_MESSAGE_CONTENT    AS lastMessageContent,
+        A.LAST_MESSAGE_AT         AS lastMessageAt,
+        A.CREATED_AT              AS createdAt,
+
+        (
+        SELECT COUNT(*)
+        FROM TB_CHAT_MESSAGE M
+        WHERE M.ROOM_KEY = A.ROOM_KEY
+        AND M.CREATED_AT >
+        COALESCE(
+        (
+        SELECT RM.CREATED_AT
+        FROM TB_CHAT_MESSAGE RM
+        WHERE RM.MESSAGE_KEY = B.LAST_READ_MESSAGE_KEY
+        ),
+        '1970-01-01'
+        )
+        AND M.SENDER_USER_KEY != #{userKey}
+        AND M.DELETED_YN = 'N'
+        ) AS unreadCount
+
+        FROM TB_CHAT_ROOM_MST A
+        INNER JOIN TB_CHAT_ROOM_USER B
+        ON A.ROOM_KEY = B.ROOM_KEY
+
+        WHERE B.USER_KEY = #{userKey}
+        AND A.DELETED_YN = 'N'
+        AND B.EXITED_AT IS NULL
+
+        ORDER BY
+        COALESCE(A.LAST_MESSAGE_AT, A.CREATED_AT) DESC
+
+    </select>
+
+    <update id="exitRoom">
+
+        UPDATE TB_CHAT_ROOM_USER
+
+        SET
+        EXITED_AT = NOW()
+
+        WHERE ROOM_KEY = #{roomKey}
+        AND USER_KEY = #{userKey}
+
+    </update>
+
+    <select id="selectChatRoomUser" resultType="com.grape.module.chat.model.ChatRoomUserDto">
+
+        SELECT *
+        FROM TB_CHAT_ROOM_USER
+        WHERE ROOM_KEY = #{roomKey}
+        AND USER_KEY = #{userKey}
+
+    </select>
+
+    <update id="rejoinChatRoomUser">
+
+        UPDATE TB_CHAT_ROOM_USER
+
+        SET
+            EXITED_AT = NULL,
+            JOINED_AT = NOW(),
+            UPDATED_AT = NOW()
+
+        WHERE ROOM_KEY = #{roomKey}
+        AND USER_KEY = #{userKey}
+
+    </update>
+
+    <select id="selectRoomParticipants"
+            parameterType="string"
+            resultType="com.grape.module.chat.model.ChatRoomParticipantDto">
+
+        SELECT
+            U.USER_KEY AS userKey,
+            U.USER_EMAIL AS userEmail,
+            U.USER_NICKNAME AS nickname
+        FROM TB_CHAT_ROOM_USER RU
+        JOIN TB_USER_MST U
+            ON RU.USER_KEY = U.USER_KEY
+        WHERE RU.ROOM_KEY = #{roomKey}
+        ORDER BY U.USER_NICKNAME ASC
+
+    </select>
+
+</mapper>

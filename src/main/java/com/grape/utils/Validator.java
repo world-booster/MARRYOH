@@ -50,5 +50,5 @@ public class Validator {
 
     public boolean isValidNickname(String nickname) { return isTextValid(nickname,2,10,false,false,false,false); }
 
-    public boolean isValidPassword(String password) { return isTextValid(password,7,10,true,true,true,true); }
+    public boolean isValidPassword(String password) { return isTextValid(password,7,20,true,true,true,true); }
 }

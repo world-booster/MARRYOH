@@ -1,9 +1,14 @@
 package com.grape.module.user.controller;
 
+import com.grape.module.auth.adaptor.AuthPort;
 import com.grape.module.auth.model.TokenDto;
 import com.grape.module.user.model.*;
 import com.grape.module.user.service.*;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.codec.binary.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -11,16 +16,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /*
  * 유저 상태 및 정보관련 CRUD 서비스 매핑
  * 회원가입, 로그인, 로그아웃, 마이페이지 조회, 회원 정보 수정, 회원 정보 검증
  * */
-@CrossOrigin(origins = "http://localhost:*")
 @RestController
-@RequestMapping("/user")
+@RequestMapping("api/user")
 @RequiredArgsConstructor
 @Validated
 public class UserController {
@@ -29,6 +35,9 @@ public class UserController {
     private final SigninService signinService;
     private final SignoutService signoutService;
     private final FindUserInfoService findUserInfoService;
+    private final AuthPort authPort;
+    @Value("${app.cookie.secure}")
+    private boolean cookieSecure;
 
     @PostMapping("/verificator-id")
     public ResponseEntity<Map<String, String>> verificateId(@RequestBody String userId) {
@@ -93,43 +102,103 @@ public class UserController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<Map<String, String>> signin(@RequestBody LoginDto loginDto) {
-        Map<String, String> response = new HashMap<>();
+    public ResponseEntity<Map<String, String>> signin(
+            @RequestBody LoginDto loginDto,
+            HttpServletResponse response
+    ) {
+
+        Map<String, String> body = new HashMap<>();
 
         TokenDto tokenDto = signinService.signin(loginDto);
 
-        ResponseCookie cookie = ResponseCookie.from("REFRESH-TOKEN", tokenDto.getRefreshToken())
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(7 * 24 * 60 * 60)
-                .sameSite("Lax")
-                .build();
+        Cookie accessCookie = new Cookie(
+                "ACCESS-TOKEN",
+                tokenDto.getAccessToken()
+        );
 
-        response.put("accessToken", tokenDto.getAccessToken());
-        response.put("message", "success");
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(response);
+        accessCookie.setHttpOnly(true);
+        accessCookie.setSecure(cookieSecure);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(60 * 60);
 
+        Cookie refreshCookie = new Cookie(
+                "REFRESH-TOKEN",
+                tokenDto.getRefreshToken()
+        );
+
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(cookieSecure);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(7 * 24 * 60 * 60);
+
+        String csrfToken = authPort.createCsrfToken();
+        Cookie csrfCookie = new Cookie("CSRF-TOKEN", csrfToken);
+
+        csrfCookie.setHttpOnly(false);
+        csrfCookie.setSecure(cookieSecure);
+        csrfCookie.setPath("/");
+        csrfCookie.setMaxAge(7 * 7 * 60 * 60);
+
+        response.addCookie(accessCookie);
+        response.addCookie(refreshCookie);
+        response.addCookie(csrfCookie);
+
+        body.put("message", "success");
+
+        return ResponseEntity.ok(body);
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<Map<String, String>> signout(@CookieValue(value = "REFRESH-TOKEN", required = false) String refreshToken) {
-        Map<String, String> response = new HashMap<>();
+    public ResponseEntity<Map<String, String>> signout(
+            @CookieValue(
+                    value = "REFRESH-TOKEN",
+                    required = false
+            ) String refreshToken,
+
+            HttpServletResponse response
+    ) {
+
+        Map<String, String> body = new HashMap<>();
+
         signoutService.signout(refreshToken);
 
-        ResponseCookie expiredCookie = ResponseCookie.from("REFRESH-TOKEN", "")
-                .path("/")
-                .httpOnly(true)
-                .maxAge(0)
-                .sameSite("Lax") // 개발단계 : Lax , 운영 : strict
-                .secure(false) // 개발단계 : false , 운영 : true
-                .build();
+        /* ACCESS TOKEN 삭제 */
+        Cookie accessCookie = new Cookie(
+                "ACCESS-TOKEN",
+                ""
+        );
 
-        response.put("message", "success");
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, expiredCookie.toString())
-                .body(response);
+        accessCookie.setHttpOnly(true);
+        accessCookie.setSecure(cookieSecure); // 운영 HTTPS 환경에서는 true
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(0);
+
+        /* REFRESH TOKEN 삭제 */
+        Cookie refreshCookie = new Cookie(
+                "REFRESH-TOKEN",
+                ""
+        );
+
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(cookieSecure); // 운영 HTTPS 환경에서는 true
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(0);
+
+        response.addCookie(accessCookie);
+        response.addCookie(refreshCookie);
+
+        Cookie csrfCookie = new Cookie(
+                "CSRF-TOKEN",
+                ""
+        );
+
+        csrfCookie.setHttpOnly(false);
+        csrfCookie.setSecure(cookieSecure);
+        csrfCookie.setPath("/");
+        csrfCookie.setMaxAge(0);
+
+        body.put("message", "success");
+
+        return ResponseEntity.ok(body);
     }
 }

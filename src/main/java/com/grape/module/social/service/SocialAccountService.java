@@ -1,5 +1,7 @@
 package com.grape.module.social.service;
 
+import com.grape.module.social.exception.SocialErrorCode;
+import com.grape.module.social.exception.SocialException;
 import com.grape.module.social.model.SocialAccount;
 import com.grape.module.social.model.SocialProfile;
 import com.grape.module.social.model.SocialProvider;
@@ -28,6 +30,10 @@ public class SocialAccountService {
 
     public void insertSocialAccount(String userKey, SocialProfile profile){
 
+        if(userKey == null || userKey.isBlank()){
+            throw new IllegalStateException("[SOCIAL-ACCOUNT-INSERT] userKey is not exist");
+        }
+
         SocialAccount socialAccount = SocialAccount.builder()
                 .userKey(userKey)
                 .provider(profile.getProvider())
@@ -41,10 +47,14 @@ public class SocialAccountService {
                 .build();
 
         socialAccountRepository.insertSocialAccount(socialAccount);
+
+        logger.debug("SOCIAL_ACCOUNT_INSERT_SUCCESS userKey={} provider={} providerUserId={}", userKey, profile.getProvider(), profile.getProviderUserId());
     }
 
     public void updateLastLogin(Long socialAccountKey){
         socialAccountRepository.updateLastSocialLoginDt(socialAccountKey, LocalDateTime.now());
+
+        logger.info("SOCIAL_LOGIN_SUCCESS socialAccountKey={}", socialAccountKey);
     }
 
     private String generateUuidV7(){
@@ -55,7 +65,10 @@ public class SocialAccountService {
                 return uuidV7;
             }
         }
-        logger.debug("userKey 생성 실패 - 10회 시도 모두 중복");
-        throw new RuntimeException("고유한 userKey 생성 실패");
+
+        throw new SocialException(
+                SocialErrorCode.SIGNUP_FAILED,
+                "SIGN_UP_FAILED USER_KEY_GENERATE_FAIL duplicateCount=10"
+        );
     }
 }

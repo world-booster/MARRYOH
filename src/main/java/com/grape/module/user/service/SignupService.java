@@ -2,6 +2,8 @@ package com.grape.module.user.service;
 
 import com.grape.config.properties.DefaultUserProperties;
 import com.grape.module.auth.adaptor.AuthPort;
+import com.grape.module.user.exception.UserErrorCode;
+import com.grape.module.user.exception.UserException;
 import com.grape.module.user.model.UserDto;
 import com.grape.module.user.repository.IUserRepository;
 import com.grape.utils.DateFormatter;
@@ -37,26 +39,30 @@ public class SignupService {
         user.setAdminYn(defaultUserProperties.adminYn());
 
         if(!validator.isValidId(user.getUserId())){
-            return 0;
+            throw new UserException(UserErrorCode.INVALID_USER_ID_FORMAT);
         }
         if(!validator.isValidNickname(user.getUserNickname())){
-            return 0;
+            throw new UserException(UserErrorCode.INVALID_NICKNAME_FORMAT);
         }
         if(!validator.isValidPassword(user.getUserPw())){
-            return 0;
+            throw new UserException(UserErrorCode.INVALID_PASSWORD_FORMAT);
         }
         if(userRepository.existUserEmail(user.getUserKey())){
-            return 0;
+            throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
         }
 
         String encodedPw = passwordEncoder.encode(user.getUserPw());
         user.setUserPw(encodedPw);
 
         int result = userRepository.insertUser(user);
-        if(result == 0) return 0;
+        if(result == 0) {
+            throw new UserException(UserErrorCode.USER_SAVE_FAILED);
+        }
 
         String refreshToken = authPort.createRefreshToken(user.getUserKey());
-        if(refreshToken == null) return 0;
+        if(refreshToken == null) return 0; //TODO: 이후에 auth에서 잡고 없애기
+
+        logger.info("success sign up, userKey={}",user.getUserKey());
 
         return result;
     }
@@ -77,10 +83,15 @@ public class SignupService {
                 .build();
 
         int result = userRepository.insertUser(user);
-        if(result == 0) return null;
+        if(result == 0) {
+            throw new UserException(UserErrorCode.USER_SAVE_FAILED);
+        }
+
 
         String refreshToken = authPort.createRefreshToken(user.getUserKey());
         if(refreshToken == null) return null;
+
+        logger.info("success social user info insert our system, userKey={}, email={}", userKey, userEmail);
 
         return userKey;
     }

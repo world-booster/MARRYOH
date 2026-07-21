@@ -27,15 +27,15 @@ public class SigninService {
 
     public TokenDto signin(LoginDto loginDto) {
         UserDto user = userRepository.selectUser(loginDto.getUserId())
-                .orElseThrow(() -> new RuntimeException("해당 아이디로 가입된 회원 정보가 존재하지 않습니다."));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         String encodedPassword = userRepository.selectUserPw(user.getUserId());
         if (encodedPassword == null) {
-            throw new UserException(UserErrorCode.EMAIL_DUPLICATED);
+            throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
         }
 
         if(!passwordEncoder.matches(loginDto.getPassword(), encodedPassword)){
-            throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
+            throw new UserException(UserErrorCode.PASSWORD_NOT_MATCH);
         }
 
         Optional<UserDto> userInfo = userRepository.selectUser(loginDto.getUserId());

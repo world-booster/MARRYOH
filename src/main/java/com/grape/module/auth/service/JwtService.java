@@ -25,9 +25,10 @@ public class JwtService {
         long now = System.currentTimeMillis();
 
         return Jwts.builder()
-                .setSubject(userKey)
+                .setSubject("access-token")
                 .setIssuer(jwtProperties.getIssuer())
-                .claim(jwtProperties.getRoleClaimName(), "USER")
+                .claim("userKey",userKey)
+                .claim(jwtProperties.getRoleClaimName(), jwtProperties.getRoleUserClaimValue())
                 .claim("type", jwtProperties.getAccessTokenType())
                 .setIssuedAt(new Date(now))
                 .setExpiration(new Date(now + jwtProperties.getAccessTokenExpireMillis()))

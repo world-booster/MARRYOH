@@ -1,69 +1,50 @@
 package com.grape.module.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.grape.module.auth.model.AuthUserResponse;
 import com.grape.module.auth.service.AuthService;
-import io.jsonwebtoken.Claims;
+import com.grape.security.auth.CustomUserPrincipal;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Date;
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/auth")
+@RequestMapping("api/auth")
 public class AuthController {
 
     private static final Logger logger = LogManager.getLogger(AuthController.class);
 
     private final AuthService authService;
     private final ObjectMapper objectMapper; //임시 추후 DTO 형식으로 설계
+    @Value("${app.cookie.secure}")
+    private boolean cookieSecure;
 
-    @PostMapping("/update-token")
-    public ResponseEntity<?> updateToken(@CookieValue(value = "REFRESH-TOKEN", required = false) String refreshToken) {
-
-        if(refreshToken == null || refreshToken.isBlank()){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("RefreshToken is not existed.");
+    @GetMapping("/me")
+    public ResponseEntity<AuthUserResponse> me(Authentication authentication) {
+        if(authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        try{
+        CustomUserPrincipal user = (CustomUserPrincipal) authentication.getPrincipal();
 
-            int check = authService.checkToken(refreshToken);
-            if(check == 0){
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body("RefreshToken is not Valid.");
-            }
+        AuthUserResponse response = new AuthUserResponse(
+                user.getUserKey(),
+                user.getEmail(),
+                user.getLoginAuth()
+        );
 
-            String userKey = authService.selectUserKeyByToken(refreshToken);
-
-            String newAccessToken = authService.jwtTokenGenerator(userKey);
-            String newRefreshToken = authService.createRefreshToken(userKey);
-
-            ResponseCookie cookie = ResponseCookie.from("REFRESH-TOKEN", newRefreshToken)
-                    .httpOnly(true)
-                    .secure(false) //HTTPS (개발단계 false)
-                    .path("/")
-                    .maxAge(7*24*60*60) //7일
-                    .sameSite("Lax") // 개발단계 : Lax , 실무 : strict
-                    .build();
-
-            //보안을 위해 토큰 삭제 및 새로 생성하는 함수 추가하기
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                    .body(Map.of("accessToken", newAccessToken, "message", "ok"));
-        } catch (JwtException e){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh 토큰 검증 실패: "+e.getMessage());
-        }
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/email-request")
@@ -116,18 +97,37 @@ public class AuthController {
             authService.deleteToken(userKey);
             String newRefreshToken = authService.createRefreshToken(userKey);
             String newAccessToken = authService.jwtTokenGenerator(userKey);
+            String newCsrfToken = authService.createCsrfToken();
 
-            ResponseCookie cookie = ResponseCookie.from("REFRESH-TOKEN", newRefreshToken)
+            ResponseCookie accessCookie = ResponseCookie.from("ACCESS-TOKEN", newAccessToken)
                     .httpOnly(true)
-                    .secure(false) //HTTPS (개발단계 false)
+                    .secure(cookieSecure) //HTTPS (개발단계 false)
+                    .path("/")
+                    .maxAge(60*60) //1시간
+                    .sameSite("Lax") // 개발단계 : Lax , 실무 : strict
+                    .build();
+
+            ResponseCookie refreshCookie = ResponseCookie.from("REFRESH-TOKEN", newRefreshToken)
+                    .httpOnly(true)
+                    .secure(cookieSecure) //HTTPS (개발단계 false)
                     .path("/")
                     .maxAge(7*24*60*60) //7일
                     .sameSite("Lax") // 개발단계 : Lax , 실무 : strict
                     .build();
 
+            ResponseCookie csrfCookie = ResponseCookie.from("CSRF-TOKEN", newCsrfToken)
+                    .httpOnly(false)
+                    .secure(cookieSecure)
+                    .path("/")
+                    .maxAge(7*24*60*60)
+                    .sameSite("Lax")
+                    .build();
+
             return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                    .body(Map.of("accessToken", newAccessToken, "message", "ok"));
+                    .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, csrfCookie.toString())
+                    .build();
 
         } catch (JwtException e){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh 토큰 검증 실패: "+e.getMessage());

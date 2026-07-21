@@ -1,5 +1,7 @@
 package com.grape.module.social.service;
 
+import com.grape.module.social.exception.SocialErrorCode;
+import com.grape.module.social.exception.SocialException;
 import com.grape.module.social.model.SocialProfile;
 import com.grape.module.user.adaptor.UserPort;
 import com.grape.module.user.service.SignupService;

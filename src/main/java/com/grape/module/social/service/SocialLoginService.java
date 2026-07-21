@@ -8,12 +8,16 @@ import com.grape.module.social.model.SocialLoginResult;
 import com.grape.module.social.model.SocialProfile;
 import com.grape.module.user.adaptor.UserPort;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class SocialLoginService {
+
+    private static final Logger logger = LogManager.getLogger(SocialLoginService.class);
 
     private final SocialProviderService socialProviderService;
     private final SocialAccountService socialAccountService;
@@ -23,6 +27,7 @@ public class SocialLoginService {
 
     @Transactional
     public SocialLoginResult login(SocialLoginCommand command){
+
         SocialOAuthClient client = socialProviderService.getClient(command.getProvider());
         SocialProfile profile = client.getProfile(command);
 
@@ -44,6 +49,8 @@ public class SocialLoginService {
             socialAccountService.updateLastLogin(socialAccount.getSocialAccountKey());
         }
         userEmail = userPort.selectUserEmail(userKey);
+        logger.info("SOCIAL_LOGIN_SUCCESS userKey={}, userEmail={}", userKey, userEmail);
+
         String refreshToken = authPort.createRefreshToken(userKey);
         String accessToken = authPort.createAccessToken(userKey);
 

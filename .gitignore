@@ -43,3 +43,6 @@ out/
 ### JWT Keys
 src/main/resources/keys
 *.pem
+
+### Log ###
+logs

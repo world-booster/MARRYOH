@@ -56,6 +56,8 @@ dependencies {
 	/*2025.10.25 email 인증을 위한 의존성 추가*/
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	/*2026.05.19 websocket 의존성 추가*/
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 }
 tasks.register('explodedWar', Copy) {
 	dependsOn(tasks.named('war'))
@@ -69,4 +71,17 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+tasks.bootJar {
+	exclude("application.properties")
+	exclude("database.properties")
+	exclude("keys/private.pem")
+	exclude("keys/public.pem")
+}
+
+tasks.jar {
+	exclude("application.properties")
+	exclude("database.properties")
+	exclude("keys/private.pem")
+	exclude("keys/public.pem")
+}
 

@@ -1,5 +1,7 @@
 package com.grape.module.social.adaptor;
 
+import com.grape.module.social.exception.SocialErrorCode;
+import com.grape.module.social.exception.SocialException;
 import com.grape.module.social.model.SocialLoginCommand;
 import com.grape.module.social.model.SocialProfile;
 import com.grape.module.social.model.SocialProvider;
@@ -11,6 +13,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 @Component
@@ -61,19 +65,24 @@ public class KakaoOAuthClient implements SocialOAuthClient {
 
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<SocialTokenResponse> response = restTemplate.exchange(
-                tokenUri,
-                HttpMethod.POST,
-                requestEntity,
-                SocialTokenResponse.class
-        );
-
-        SocialTokenResponse responseBody = response.getBody();
-        if (responseBody == null || responseBody.getAccessToken() == null) {
-            throw new IllegalStateException("Kakao access token 요청에 실패했습니다.");
+        try{
+            ResponseEntity<SocialTokenResponse> response = restTemplate.exchange(
+                    tokenUri,
+                    HttpMethod.POST,
+                    requestEntity,
+                    SocialTokenResponse.class
+            );
+            SocialTokenResponse responseBody = response.getBody();
+            if (responseBody == null || responseBody.getAccessToken() == null) {
+                throw new SocialException(SocialErrorCode.TOKEN_INVALID);
+            }
+            return responseBody;
+        } catch (HttpStatusCodeException e){
+            throw new SocialException(SocialErrorCode.TOKEN_REQUEST_FAILED);
+        } catch (ResourceAccessException e){
+            throw new SocialException(SocialErrorCode.NETWORK_ERROR);
         }
 
-        return responseBody;
     }
 
     private KakaoUserResponse requestUserInfo(String accessToken) {
@@ -91,7 +100,7 @@ public class KakaoOAuthClient implements SocialOAuthClient {
 
         KakaoUserResponse responseBody = response.getBody();
         if (responseBody == null || responseBody.getId() == null) {
-            throw new IllegalStateException("Kakao 사용자 정보 조회에 실패했습니다.");
+            throw new SocialException(SocialErrorCode.USER_INFO_REQUEST_FAILED);
         }
 
         return responseBody;

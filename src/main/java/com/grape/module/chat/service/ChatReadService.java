@@ -1,0 +1,74 @@
+package com.grape.module.chat.service;
+
+import com.grape.module.chat.model.SocketEvent;
+import com.grape.module.chat.model.request.ReadMessageRequest;
+import com.grape.module.chat.model.response.ChatSocketMessageResponse;
+import com.grape.module.chat.repository.IChatReadRepository;
+import com.grape.module.chat.utils.ChatKeyGenerator;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Log4j2
+@Service
+@RequiredArgsConstructor
+public class ChatReadService {
+
+    private final IChatReadRepository chatReadRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+
+    @Transactional
+    public void readMessage(String userKey, ReadMessageRequest request){
+
+        List<String> unreadMessages = chatReadRepository.selectUnreadMessageKeys(request.getRoomKey(), userKey);
+
+        for(String messageKey : unreadMessages){
+            int existCount = chatReadRepository.existMessageRead(messageKey, userKey);
+
+            if(existCount > 0){
+                continue;
+            }
+
+            chatReadRepository.insertMessageRead(ChatKeyGenerator.generateMessageReadKey(), messageKey, userKey);
+            int readCount = chatReadRepository.selectReadCount(messageKey);
+
+            ChatSocketMessageResponse payload =
+                    ChatSocketMessageResponse.builder()
+                            .messageKey(messageKey)
+                            .roomKey(request.getRoomKey())
+                            .readCount(readCount)
+                            .build();
+
+            SocketEvent<ChatSocketMessageResponse> event =
+                    SocketEvent.<ChatSocketMessageResponse>builder()
+                            .eventType("READ")
+                            .payload(payload)
+                            .build();
+
+            messagingTemplate.convertAndSend("/subscribe/chat/" + request.getRoomKey(),
+                    event);
+        }
+
+        String messageKey = request.getMessageKey();
+
+        log.info("REQUEST MESSAGE KEY = " + messageKey);
+
+        if(messageKey == null){
+            messageKey = chatReadRepository.selectLastMessageKey(request.getRoomKey());
+            log.info("DB LAST MESSAGE KEY = " + messageKey);
+        }
+
+        if(messageKey != null){
+
+            log.info("UPDATE PARAM roomKey={}, userKey={}, messageKey={}", request.getRoomKey(), userKey, messageKey);
+
+            int updated = chatReadRepository.updateLastReadMessage(request.getRoomKey(), userKey, messageKey);
+
+            log.info("UPDATED COUNT = {}", updated);
+        }
+    }
+}

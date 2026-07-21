@@ -1,23 +1,27 @@
 package com.grape.module.social.controller;
 
+import com.grape.module.auth.adaptor.AuthPort;
 import com.grape.module.social.model.*;
 import com.grape.module.social.service.SocialLoginService;
 import com.grape.module.social.service.SocialSignupService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/social")
+@RequestMapping("api/social")
 public class SocialController {
 
     private final SocialLoginService socialLoginService;
+    private final AuthPort authPort;
+    @Value("${app.cookie.secure}")
+    private boolean cookieSecure;
 
     @PostMapping("/{provider}/login")
     public ResponseEntity<SocialLoginResult> login(
@@ -34,10 +38,32 @@ public class SocialController {
         SocialLoginResult result = socialLoginService.login(command);
 
         Cookie cookie = new Cookie("REFRESH-TOKEN", result.getRefreshToken());
+        cookie.setSecure(cookieSecure);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         cookie.setMaxAge(60 * 60 * 24 * 14);
+
         response.addCookie(cookie);
+
+        Cookie accessCookie =
+                new Cookie("ACCESS-TOKEN", result.getAccessToken());
+
+        accessCookie.setHttpOnly(true);
+        accessCookie.setSecure(cookieSecure);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(60 * 60);
+
+        response.addCookie(accessCookie);
+
+        String csrfToken = authPort.createCsrfToken();
+        Cookie csrfCookie = new Cookie("CSRF-TOKEN", csrfToken);
+
+        csrfCookie.setPath("/");
+        csrfCookie.setHttpOnly(false);
+        csrfCookie.setSecure(cookieSecure);
+        csrfCookie.setMaxAge(60*60*24*14);
+
+        response.addCookie(csrfCookie);
 
         return ResponseEntity.ok(result);
     }
