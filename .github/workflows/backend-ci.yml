@@ -4,12 +4,11 @@ on:
   pull_request:
     branches:
       - main
-      - develop
 
   push:
     branches:
       - main
-      - develop
+      - "feature/**"
 
 permissions:
   contents: read
@@ -37,7 +36,7 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      - name: Runt tests
+      - name: Run tests
         run: ./gradlew test --no-daemon
 
       - name: Build application
