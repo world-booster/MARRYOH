@@ -99,6 +99,7 @@ jobs:
           SPRING_PROFILES_ACTIVE: ci
           JWT_PRIVATE_KEY_PATH: file:${{ runner.temp }}/grape-jwt/private.pem
           JWT_PUBLIC_KEY_PATH: file:${{ runner.temp }}/grape-jwt/public.pem
+          CSRF_SECRET: grape-ci-csrf-secret-key-for-test-environment-2026
 
       - name: Build application
         run: ./gradlew build -x test --no-daemon
