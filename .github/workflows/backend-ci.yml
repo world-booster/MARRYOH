@@ -64,18 +64,16 @@ jobs:
         run: chmod +x gradlew
 
       - name: Generate temporary JWT test keys
+        shell: bash
         run:
+          set -euo pipefail
           mkdir -p build/ci-keys
-        
-          openssl genpkey \
-            -algorithm RSA \
-            -pkeyopt rsa_keygen_bits:2048 \
-            -out build/ci-keys/private.pem
-        
-          openssl rsa \
-            -pubout \
-            -in build/ci-keys/private.pem \
-            -out build/ci-keys/public.pem
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out build/ci-keys/private.pem
+          openssl pkey -in build/ci-keys/private.pem -pubout -out build/ci-keys/public.pem
+          chmod 600 build/ci-keys/private.pem
+          chmod 644 build/ci-keys/public.pem
+          test -s build/ci-keys/private.pem
+          test -s build/ci-keys/public.pem
 
       - name: Run tests
         run: ./gradlew clean test --no-daemon --stacktrace
