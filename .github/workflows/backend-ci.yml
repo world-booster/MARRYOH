@@ -21,6 +21,33 @@ jobs:
   test-and-build:
     name: Backend Test & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_DATABASE: grape_test
+          MARIADB_USER: grape_test
+          MARIADB_PASSWORD: grape_test_password
+          MARIADB_ROOT_PASSWORD: root_test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:7.4
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
 
     steps:
       - name: Checkout repository
@@ -40,6 +67,11 @@ jobs:
         run: ./gradlew test --no-daemon
 
       - name: Build application
+        run: ./gradlew clean test --no-daemon --stacktrace
+        env:
+          SPRING_PROFILES_ACTIVE: ci
+
+      - name: Build application
         run: ./gradlew build -x test --no-daemon
 
       - name: Upload test report
@@ -50,3 +82,14 @@ jobs:
           path: build/reports/tests/test
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Upload build artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grape-backend-build
+          path: |
+            build/libs/*.jar
+            build/libs/*.war
+          if-no-files-fount: error
+          retention-dats: 7
