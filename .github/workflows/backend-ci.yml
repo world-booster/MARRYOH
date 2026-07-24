@@ -65,22 +65,40 @@ jobs:
 
       - name: Generate temporary JWT test keys
         shell: bash
-        run:
+        run: |
           set -euo pipefail
-          mkdir -p build/ci-keys
-          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out build/ci-keys/private.pem
-          openssl pkey -in build/ci-keys/private.pem -pubout -out build/ci-keys/public.pem
-          chmod 600 build/ci-keys/private.pem
-          chmod 644 build/ci-keys/public.pem
-          test -s build/ci-keys/private.pem
-          test -s build/ci-keys/public.pem
+          
+          mkdir -p "${RUNNER_TEMP}/grape-jwt"
+          
+          openssl genpkey \
+            -algorithm RSA \
+            -pkeyopt rsa_keygen_bits:2048 \
+            -out "${RUNNER_TEMP}/grape-jwt/private.pem"
+          
+          openssl pkey \
+            -in "${RUNNER_TEMP}/grape-jwt/private.pem" \
+            -pubout \
+            -out "${RUNNER_TEMP}/grape-jwt/public.pem"
+          
+          test -s "${RUNNER_TEMP}/grape-jwt/private.pem"
+          test -s "${RUNNER_TEMP}/grape-jwt/public.pem"
+          
+          openssl pkey \
+            -in "${RUNNER_TEMP}/grape-jwt/private.pem" \
+            -noout \
+            -check
+          
+          openssl pkey \
+            -pubin \
+            -in "${RUNNER_TEMP}/grape-jwt/public.pem" \
+            -noout              
 
       - name: Run tests
         run: ./gradlew clean test --no-daemon --stacktrace
         env:
           SPRING_PROFILES_ACTIVE: ci
-          JWT_PRIVATE_KEY_PATH: ${{ github.workspace }}/build/ci-keys/private.pem
-          JWT_PUBLIC_KEY_PATH: ${{ github.workspace }}/build/ci-keys/public.pem
+          JWT_PRIVATE_KEY_PATH: file:${{ runner.temp }}/grape-jwt/private.pem
+          JWT_PUBLIC_KEY_PATH: file:${{ runner.temp }}/grape-jwt/public.pem
 
       - name: Build application
         run: ./gradlew build -x test --no-daemon
