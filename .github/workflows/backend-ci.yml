@@ -63,10 +63,26 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
+      - name: Generate temporary JWT test keys
+        run:
+          mkdir -p build/ci-keys
+        
+          openssl genpkey \
+            -algorithm RSA \
+            -pkeyopt rsa_keygen_bits:2048 \
+            -out build/ci-keys/private.pem
+        
+          openssl rsa \
+            -pubout \
+            -in build/ci-keys/private.pem \
+            -out build/ci-keys/public.pem
+
       - name: Run tests
         run: ./gradlew clean test --no-daemon --stacktrace
         env:
           SPRING_PROFILES_ACTIVE: ci
+          JWT_PRIVATE_KEY_PATH: ${{ github.workspace }}/build/ci-keys/private.pem
+          JWT_PUBLIC_KEY_PATH: ${{ github.workspace }}/build/ci-keys/public.pem
 
       - name: Build application
         run: ./gradlew build -x test --no-daemon
