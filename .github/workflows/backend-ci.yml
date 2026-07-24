@@ -63,13 +63,43 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      - name: Run tests
-        run: ./gradlew test --no-daemon
+      - name: Generate temporary JWT test keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          mkdir -p "${RUNNER_TEMP}/grape-jwt"
+          
+          openssl genpkey \
+            -algorithm RSA \
+            -pkeyopt rsa_keygen_bits:2048 \
+            -out "${RUNNER_TEMP}/grape-jwt/private.pem"
+          
+          openssl pkey \
+            -in "${RUNNER_TEMP}/grape-jwt/private.pem" \
+            -pubout \
+            -out "${RUNNER_TEMP}/grape-jwt/public.pem"
+          
+          test -s "${RUNNER_TEMP}/grape-jwt/private.pem"
+          test -s "${RUNNER_TEMP}/grape-jwt/public.pem"
+          
+          openssl pkey \
+            -in "${RUNNER_TEMP}/grape-jwt/private.pem" \
+            -noout \
+            -check
+          
+          openssl pkey \
+            -pubin \
+            -in "${RUNNER_TEMP}/grape-jwt/public.pem" \
+            -noout              
 
-      - name: Build application
+      - name: Run tests
         run: ./gradlew clean test --no-daemon --stacktrace
         env:
           SPRING_PROFILES_ACTIVE: ci
+          JWT_PRIVATE_KEY_PATH: file:${{ runner.temp }}/grape-jwt/private.pem
+          JWT_PUBLIC_KEY_PATH: file:${{ runner.temp }}/grape-jwt/public.pem
+          CSRF_SECRET: grape-ci-csrf-secret-key-for-test-environment-2026
 
       - name: Build application
         run: ./gradlew build -x test --no-daemon
