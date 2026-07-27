@@ -60,6 +60,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	/*2026.07.22 CI를 위한 test 의존성 추가*/
 	testRuntimeOnly 'com.h2database:h2'
+	/*2026.07.27 CD healthcare를 위한 의존성 추가*/
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 }
 tasks.register('explodedWar', Copy) {
 	dependsOn(tasks.named('war'))
@@ -85,5 +87,13 @@ tasks.jar {
 	exclude("database.properties")
 	exclude("keys/private.pem")
 	exclude("keys/public.pem")
+}
+
+jar {
+	enabled = false
+}
+
+bootJar {
+	enabled = true
 }
 
