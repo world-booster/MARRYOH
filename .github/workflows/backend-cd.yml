@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      image: ${{ steps.image.outputs.full-image }}
+      image: ${{ steps.image.outputs.full_image }}
 
     steps:
       - name: Checkout tested commit
@@ -48,15 +48,20 @@ jobs:
       - name: Create image name
         id: image
         shell: bash
+        env:
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          REPOSITORY_LOWER="$(echo '${{ github.repository }}' | tr '[:upper]' '[:lower]')"
-          SHORT_SHA="$(echo '${{ github.event.workflow_run.head_sha }}' | cut -c1-7)"
+          IMAGE_NAME="$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          SHORT_SHA="$(echo "$TESTED_SHA" | cut -c1-7)"
           
-          FULL_IMAGE="ghcr.io/${REPOSITORY_LOWER}:sha-${SHORT_SHA}"
-          LATEST_IMAGE="ghcr.io/${REPOSITORY_LOSER}:latest"
+          FULL_IMAGE="ghcr.io/${IMAGE_NAME}:sha-${SHORT_SHA}"
+          LATEST_IMAGE="ghcr.io/${IMAGE_NAME}:latest"
           
-          echo "full-image=${FULL_IMAGE}" >> "$GITHUB_OUTPUT"
-          echo "latest-image=${LATEST_IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "full_image=${FULL_IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "latest_image=${LATEST_IMAGE}" >> "$GITHUB_OUTPUT"
+          
+          echo "Full image: ${FULL_IMAGE}"
+          echo "Latest image: ${LATEST_IMAGE}"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -74,8 +79,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ steps.image.outputs.full-image }}
-            ${{ steps.image.outputs.latest-image }}
+            ${{ steps.image.outputs.full_image }}
+            ${{ steps.image.outputs.latest_image }}
 
   deploy:
     name: Deploy production
