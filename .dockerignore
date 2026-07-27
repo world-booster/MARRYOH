@@ -1,0 +1,11 @@
+.git
+.github
+.gradle
+.idea
+out
+*.iml
+*.log
+
+build/reports
+build/test-results
+build/tmp

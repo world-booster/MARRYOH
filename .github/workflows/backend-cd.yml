@@ -1,0 +1,186 @@
+name: Grape Backend CD
+
+on:
+  workflow_run:
+    workflows:
+      - Grape Backend CI
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: marryoh-backend-production
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    name: Build and push image
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    outputs:
+      image: ${{ steps.image.outputs.full-image }}
+
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Grant Gradle permission
+        run: chmod +x gradlew
+
+      - name: Build Spring Boot JAR
+        run: ./gradlew clean bootJar -x test --no-daemon
+
+      - name: Create image name
+        id: image
+        shell: bash
+        run: |
+          REPOSITORY_LOWER="$(echo '${{ github.repository }}' | tr '[:upper]' '[:lower]')"
+          SHORT_SHA="$(echo '${{ github.event.workflow_run.head_sha }}' | cut -c1-7)"
+          
+          FULL_IMAGE="ghcr.io/${REPOSITORY_LOWER}:sha-${SHORT_SHA}"
+          LATEST_IMAGE="ghcr.io/${REPOSITORY_LOSER}:latest"
+          
+          echo "full-image=${FULL_IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "latest-image=${LATEST_IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image.outputs.full-image }}
+            ${{ steps.image.outputs.latest-image }}
+
+  deploy:
+    name: Deploy production
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+        run: |
+          install -m 700 -d ~/.ssh
+          
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" \
+            >> ~/.ssh/known_hosts
+
+      - name: Deploy backend
+        env:
+          SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          SSH_USER: ${{ secrets.PROD_SSH_USER }}
+
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+          BACKEND_IMAGE: ${{ needs.build-and-push.outputs.image }}
+        run: |
+          ssh \
+            -o IdentitiesOnly=yes \
+            -p "$SSH_PORT" \
+            "$SSH_USER@SSH_HOST" \
+            "BACKEND_IMAGE='$BACKEND_IMAGE' \
+             GHCR_USERNAME='$GHCR_USERNAME' \
+             GHCR_TOKEN='$GHCR_TOKEN' \
+             bash -s" <<'REMOTE'
+              set -Eeuo pipefail
+          
+              DEPLOY_DIR="/svc/marryoh"
+              SERVICE_NAME="backend"
+              CONTAINER_NAME="marryoh-backend"
+          
+              cd "$DEPLOY_DIR"
+          
+              if [ ! -f "docker-compose.yml" ] \
+                && [ ! -f "compose.yml ]; then
+                echo "Compose 파일을 찾을 수 없습니다."
+                exit 1
+              fi
+          
+              if [ ! -d "config" ]; then
+                echo "운영 설정 디렉터리를 찾을 수 없습니다."
+                exit 1
+              fi
+          
+              echo "$GHCR_TOKEN" |
+                docker login ghcr.io \
+                  --username "$GHCR_USERNAME" \
+                  --password-stdin
+          
+              export BACKEND_IMAGE
+          
+              echo "배포 이미지: $BACKEND_IMAGE"
+          
+              docker compose pull "$SERVICE_NAME"
+          
+              docker compose up \
+                -d \
+                --no-deps \
+                "$SERVICE_NAME"
+          
+              for attempt in $(seq 1 24); do
+                STATUS="$(
+                  docker inspect \
+                    --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
+                    "$CONTAINER_NAME" 2>/dev/null \
+                    || echo "not-found"
+                )"
+          
+                echo "백엔드 상태: $STATUS"
+          
+                if [ "$STATUS" = "healthy" ]; then
+                  echo "백엔드 배포 성공"
+                  docker image prune -f
+                  exit 0
+                fi
+          
+                if [ "$STATUS" = "unhealthy" ] \
+                  || [ "$STATUS" = "exited" ] \
+                  || [ "$STATUS" = "dead" ] \
+                  || [ "$STATUS" = "not-found" ]' then
+                  echo "백엔드 배포 실패"
+                  docker logs --tail 200 "$CONTAINER_NAME" || true
+                  exit 1
+                fi
+          
+                sleep 5
+              done
+          
+              echo "헬스체크 시간 초과"
+              docker logs --tail 200 "$CONTAINER_NAME" || true
+              exit 1
+          REMOTE
