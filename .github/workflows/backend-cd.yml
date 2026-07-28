@@ -51,15 +51,24 @@ jobs:
         env:
           TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          IMAGE_NAME="$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
-          SHORT_SHA="$(echo "$TESTED_SHA" | cut -c1-7)"
-          
+          set -Eeuo pipefail
+
+          IMAGE_NAME="$(
+            printf '%s' "$GITHUB_REPOSITORY" |
+              tr '[:upper:]' '[:lower:]'
+          )"
+
+          SHORT_SHA="$(
+            printf '%s' "$TESTED_SHA" |
+              cut -c1-7
+          )"
+
           FULL_IMAGE="ghcr.io/${IMAGE_NAME}:sha-${SHORT_SHA}"
           LATEST_IMAGE="ghcr.io/${IMAGE_NAME}:latest"
-          
+
           echo "full_image=${FULL_IMAGE}" >> "$GITHUB_OUTPUT"
           echo "latest_image=${LATEST_IMAGE}" >> "$GITHUB_OUTPUT"
-          
+
           echo "Full image: ${FULL_IMAGE}"
           echo "Latest image: ${LATEST_IMAGE}"
 
@@ -127,6 +136,11 @@ jobs:
             exit 1
           fi
 
+          if ! [[ "$SSH_PORT" =~ ^[0-9]+$ ]]; then
+            echo "ERROR: PROD_SSH_PORT must be numeric."
+            exit 1
+          fi
+
           echo "SSH secrets are configured."
 
           install -m 700 -d "$HOME/.ssh"
@@ -163,26 +177,13 @@ jobs:
             -F "[$SSH_HOST]:$SSH_PORT" \
             -f "$HOME/.ssh/known_hosts" \
             > /dev/null; then
-            echo "ERROR: Failed to find the server entry in known_hosts."
+            echo "ERROR: Failed to find server entry in known_hosts."
             exit 1
           fi
 
-          echo "known_hosts entry is valid."
-
-          echo "Checking SSH TCP connectivity..."
-
-          if ! timeout 15 bash -c \
-            "cat < /dev/null > /dev/tcp/$SSH_HOST/$SSH_PORT"; then
-            echo "ERROR: Cannot connect to the SSH host and port."
-            exit 1
-          fi
-
-          echo "SSH port is reachable."
-
-          echo "Testing SSH public-key authentication..."
+          echo "Checking SSH connectivity and authentication..."
 
           ssh \
-            -vv \
             -i "$HOME/.ssh/id_ed25519" \
             -o IdentitiesOnly=yes \
             -o BatchMode=yes \
@@ -198,89 +199,196 @@ jobs:
 
           echo "SSH configuration completed."
 
-      - name: Deploy backend
+      - name: Log in to GHCR on production server
+        shell: bash
         env:
           SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
           SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
           SSH_USER: ${{ secrets.PROD_SSH_USER }}
-
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          set -Eeuo pipefail
 
+          if [ -z "${GHCR_USERNAME:-}" ]; then
+            echo "ERROR: GHCR_USERNAME is empty."
+            exit 1
+          fi
+
+          if [ -z "${GHCR_TOKEN:-}" ]; then
+            echo "ERROR: GHCR_TOKEN is empty."
+            exit 1
+          fi
+
+          if ! [[ "$GHCR_USERNAME" =~ ^[A-Za-z0-9-]+$ ]]; then
+            echo "ERROR: GHCR_USERNAME contains invalid characters."
+            exit 1
+          fi
+
+          echo "Logging in to GHCR on production server..."
+
+          printf '%s' "$GHCR_TOKEN" |
+            ssh \
+              -i "$HOME/.ssh/id_ed25519" \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o PreferredAuthentications=publickey \
+              -o PasswordAuthentication=no \
+              -o KbdInteractiveAuthentication=no \
+              -o StrictHostKeyChecking=yes \
+              -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+              -o ConnectTimeout=15 \
+              -p "$SSH_PORT" \
+              "$SSH_USER@$SSH_HOST" \
+              "docker login ghcr.io \
+                --username '$GHCR_USERNAME' \
+                --password-stdin"
+
+          echo "GHCR login completed."
+
+      - name: Deploy backend
+        shell: bash
+        env:
+          SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          SSH_USER: ${{ secrets.PROD_SSH_USER }}
           BACKEND_IMAGE: ${{ needs.build-and-push.outputs.image }}
         run: |
+          set -Eeuo pipefail
+
+          if [ -z "${BACKEND_IMAGE:-}" ]; then
+            echo "ERROR: BACKEND_IMAGE is empty."
+            exit 1
+          fi
+
+          if ! [[ "$BACKEND_IMAGE" =~ ^ghcr\.io/[a-z0-9._/-]+:[A-Za-z0-9._-]+$ ]]; then
+            echo "ERROR: BACKEND_IMAGE has an invalid format."
+            exit 1
+          fi
+
+          echo "Starting backend deployment..."
+          echo "Deployment image: $BACKEND_IMAGE"
+
           ssh \
+            -i "$HOME/.ssh/id_ed25519" \
             -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o PreferredAuthentications=publickey \
+            -o PasswordAuthentication=no \
+            -o KbdInteractiveAuthentication=no \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o ConnectTimeout=15 \
             -p "$SSH_PORT" \
             "$SSH_USER@$SSH_HOST" \
-            "BACKEND_IMAGE='$BACKEND_IMAGE' \
-             GHCR_USERNAME='$GHCR_USERNAME' \
-             GHCR_TOKEN='$GHCR_TOKEN' \
-             bash -s" <<'REMOTE'
-              set -Eeuo pipefail
-          
-              DEPLOY_DIR="/svc/marryoh"
-              SERVICE_NAME="backend"
-              CONTAINER_NAME="marryoh-backend"
-          
-              cd "$DEPLOY_DIR"
-          
-              if [ ! -f "docker-compose.yml" ] \
-                && [ ! -f "compose.yml ]; then
-                echo "Compose 파일을 찾을 수 없습니다."
-                exit 1
-              fi
-          
-              if [ ! -d "config" ]; then
-                echo "운영 설정 디렉터리를 찾을 수 없습니다."
-                exit 1
-              fi
-          
-              echo "$GHCR_TOKEN" |
-                docker login ghcr.io \
-                  --username "$GHCR_USERNAME" \
-                  --password-stdin
-          
-              export BACKEND_IMAGE
-          
-              echo "배포 이미지: $BACKEND_IMAGE"
-          
-              docker compose pull "$SERVICE_NAME"
-          
-              docker compose up \
-                -d \
-                --no-deps \
-                "$SERVICE_NAME"
-          
-              for attempt in $(seq 1 24); do
-                STATUS="$(
-                  docker inspect \
-                    --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
-                    "$CONTAINER_NAME" 2>/dev/null \
-                    || echo "not-found"
-                )"
-          
-                echo "백엔드 상태: $STATUS"
-          
-                if [ "$STATUS" = "healthy" ]; then
-                  echo "백엔드 배포 성공"
-                  docker image prune -f
-                  exit 0
-                fi
-          
-                if [ "$STATUS" = "unhealthy" ] \
-                  || [ "$STATUS" = "exited" ] \
-                  || [ "$STATUS" = "dead" ] \
-                  || [ "$STATUS" = "not-found" ]' then
-                  echo "백엔드 배포 실패"
-                  docker logs --tail 200 "$CONTAINER_NAME" || true
-                  exit 1
-                fi
-          
-                sleep 5
-              done
-          
-              echo "헬스체크 시간 초과"
+            "bash -s -- '$BACKEND_IMAGE'" <<'REMOTE'
+          set -Eeuo pipefail
+
+          BACKEND_IMAGE="$1"
+
+          readonly DEPLOY_DIR="/svc/marryoh"
+          readonly SERVICE_NAME="backend"
+          readonly CONTAINER_NAME="marryoh-backend"
+
+          echo "Connected to production server."
+          echo "Deployment directory: $DEPLOY_DIR"
+          echo "Backend image: $BACKEND_IMAGE"
+
+          if ! command -v docker > /dev/null 2>&1; then
+            echo "ERROR: Docker is not installed."
+            exit 1
+          fi
+
+          if ! docker compose version > /dev/null 2>&1; then
+            echo "ERROR: Docker Compose plugin is not available."
+            exit 1
+          fi
+
+          if [ ! -d "$DEPLOY_DIR" ]; then
+            echo "ERROR: Deployment directory does not exist."
+            exit 1
+          fi
+
+          cd "$DEPLOY_DIR"
+
+          if [ ! -d "config" ]; then
+            echo "ERROR: Production config directory does not exist."
+            exit 1
+          fi
+
+          export BACKEND_IMAGE
+
+          echo "Validating Docker Compose configuration..."
+
+          if ! docker compose config > /dev/null; then
+            echo "ERROR: Docker Compose configuration is invalid."
+            exit 1
+          fi
+
+          echo "Pulling backend image..."
+          docker compose pull "$SERVICE_NAME"
+
+          echo "Recreating backend container..."
+          docker compose up \
+            -d \
+            --no-deps \
+            "$SERVICE_NAME"
+
+          echo "Verifying container creation..."
+
+          if ! docker inspect "$CONTAINER_NAME" > /dev/null 2>&1; then
+            echo "ERROR: Backend container was not created."
+            docker compose ps
+            exit 1
+          fi
+
+          HAS_HEALTHCHECK="$(
+            docker inspect \
+              --format='{{if .Config.Healthcheck}}yes{{else}}no{{end}}' \
+              "$CONTAINER_NAME"
+          )"
+
+          if [ "$HAS_HEALTHCHECK" != "yes" ]; then
+            echo "ERROR: Backend container does not have a healthcheck."
+            docker compose ps "$SERVICE_NAME"
+            docker logs --tail 200 "$CONTAINER_NAME" || true
+            exit 1
+          fi
+
+          echo "Waiting for backend healthcheck..."
+
+          for attempt in $(seq 1 24); do
+            STATUS="$(
+              docker inspect \
+                --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
+                "$CONTAINER_NAME" 2>/dev/null \
+                || echo "not-found"
+            )"
+
+            echo "Healthcheck attempt ${attempt}/24: $STATUS"
+
+            if [ "$STATUS" = "healthy" ]; then
+              echo "Backend deployment succeeded."
+              docker compose ps "$SERVICE_NAME"
+              docker image prune -f
+              exit 0
+            fi
+
+            if [ "$STATUS" = "unhealthy" ] \
+              || [ "$STATUS" = "exited" ] \
+              || [ "$STATUS" = "dead" ] \
+              || [ "$STATUS" = "not-found" ]; then
+              echo "ERROR: Backend deployment failed."
+              docker compose ps "$SERVICE_NAME" || true
               docker logs --tail 200 "$CONTAINER_NAME" || true
               exit 1
+            fi
+
+            sleep 5
+          done
+
+          echo "ERROR: Backend healthcheck timed out."
+          docker compose ps "$SERVICE_NAME" || true
+          docker logs --tail 200 "$CONTAINER_NAME" || true
+          exit 1
           REMOTE
