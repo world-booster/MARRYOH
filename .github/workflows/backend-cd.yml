@@ -90,18 +90,54 @@ jobs:
 
     steps:
       - name: Configure SSH
+        shell: bash
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
           SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
         run: |
-          install -m 700 -d ~/.ssh
-          
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          
-          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" \
-            >> ~/.ssh/known_hosts
+          set -Eeuo pipefail
+
+          if [ -z "$SSH_HOST" ]; then
+            echo "PROD_SSH_HOST secret is empty."
+            exit 1
+          fi
+
+          if [ -z "$SSH_PORT" ]; then
+            echo "PROD_SSH_PORT secret is empty."
+            exit 1
+          fi
+
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "PROD_SSH_PRIVATE_KEY secret is empty."
+            exit 1
+          fi
+
+          echo "SSH host is configured."
+          echo "SSH port: $SSH_PORT"
+
+          install -m 700 -d "$HOME/.ssh"
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+
+          echo "Validating private key..."
+          ssh-keygen -y -f "$HOME/.ssh/id_ed25519" > /dev/null
+
+          echo "Checking SSH port connectivity..."
+          timeout 15 bash -c \
+            "cat < /dev/null > /dev/tcp/$SSH_HOST/$SSH_PORT"
+
+          echo "Collecting server host key..."
+          ssh-keyscan \
+            -T 15 \
+            -p "$SSH_PORT" \
+            -H "$SSH_HOST" \
+            >> "$HOME/.ssh/known_hosts"
+
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          echo "SSH configuration completed."
 
       - name: Deploy backend
         env:
