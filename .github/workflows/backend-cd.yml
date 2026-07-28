@@ -95,26 +95,34 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
           SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          SSH_USER: ${{ secrets.PROD_SSH_USER }}
           SSH_HOST_KEY: ${{ secrets.PROD_SSH_HOST_KEY }}
         run: |
           set -Eeuo pipefail
 
-          if [ -z "$SSH_HOST" ]; then
+          echo "Checking required SSH secrets..."
+
+          if [ -z "${SSH_HOST:-}" ]; then
             echo "ERROR: PROD_SSH_HOST is empty."
             exit 1
           fi
 
-          if [ -z "$SSH_PORT" ]; then
+          if [ -z "${SSH_PORT:-}" ]; then
             echo "ERROR: PROD_SSH_PORT is empty."
             exit 1
           fi
 
-          if [ -z "$SSH_PRIVATE_KEY" ]; then
+          if [ -z "${SSH_USER:-}" ]; then
+            echo "ERROR: PROD_SSH_USER is empty."
+            exit 1
+          fi
+
+          if [ -z "${SSH_PRIVATE_KEY:-}" ]; then
             echo "ERROR: PROD_SSH_PRIVATE_KEY is empty."
             exit 1
           fi
 
-          if [ -z "$SSH_HOST_KEY" ]; then
+          if [ -z "${SSH_HOST_KEY:-}" ]; then
             echo "ERROR: PROD_SSH_HOST_KEY is empty."
             exit 1
           fi
@@ -122,6 +130,8 @@ jobs:
           echo "SSH secrets are configured."
 
           install -m 700 -d "$HOME/.ssh"
+
+          echo "Writing deployment private key..."
 
           printf '%s\n' "$SSH_PRIVATE_KEY" \
             > "$HOME/.ssh/id_ed25519"
@@ -137,7 +147,7 @@ jobs:
 
           echo "Deployment private key is valid."
 
-          echo "Creating known_hosts with the registered server host key..."
+          echo "Creating pinned known_hosts entry..."
 
           printf '[%s]:%s %s\n' \
             "$SSH_HOST" \
@@ -147,49 +157,44 @@ jobs:
 
           chmod 600 "$HOME/.ssh/known_hosts"
 
-          echo "Validating known_hosts..."
+          echo "Validating known_hosts entry..."
 
-          ssh-keygen \
+          if ! ssh-keygen \
             -F "[$SSH_HOST]:$SSH_PORT" \
             -f "$HOME/.ssh/known_hosts" \
-            > /dev/null
+            > /dev/null; then
+            echo "ERROR: Failed to find the server entry in known_hosts."
+            exit 1
+          fi
+
+          echo "known_hosts entry is valid."
 
           echo "Checking SSH TCP connectivity..."
 
-          timeout 15 bash -c \
-            "cat < /dev/null > /dev/tcp/$SSH_HOST/$SSH_PORT"
+          if ! timeout 15 bash -c \
+            "cat < /dev/null > /dev/tcp/$SSH_HOST/$SSH_PORT"; then
+            echo "ERROR: Cannot connect to the SSH host and port."
+            exit 1
+          fi
+
+          echo "SSH port is reachable."
 
           echo "Testing SSH public-key authentication..."
 
-          set +e
-
           ssh \
-            -vvv \
+            -vv \
             -i "$HOME/.ssh/id_ed25519" \
             -o IdentitiesOnly=yes \
             -o BatchMode=yes \
+            -o PreferredAuthentications=publickey \
             -o PasswordAuthentication=no \
             -o KbdInteractiveAuthentication=no \
-            -o PreferredAuthentications=publickey \
             -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
             -o ConnectTimeout=15 \
             -p "$SSH_PORT" \
-            "${{ secrets.PROD_SSH_USER }}@$SSH_HOST" \
-            "true"
-
-          SSH_EXIT_CODE=$?
-
-          set -e
-
-          echo "SSH exit code: $SSH_EXIT_CODE"
-
-          if [ "$SSH_EXIT_CODE" -ne 0 ]; then
-            echo "ERROR: SSH public-key authentication or remote command execution failed."
-            exit "$SSH_EXIT_CODE"
-          fi
-
-          echo "SSH authentication succeeded."
-          echo "SSH configuration completed."
+            "$SSH_USER@$SSH_HOST" \
+            "echo 'SSH authentication succeeded.'"
 
           echo "SSH configuration completed."
 
