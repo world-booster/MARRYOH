@@ -161,17 +161,35 @@ jobs:
 
           echo "Testing SSH public-key authentication..."
 
+          set +e
+
           ssh \
+            -vvv \
             -i "$HOME/.ssh/id_ed25519" \
             -o IdentitiesOnly=yes \
             -o BatchMode=yes \
             -o PasswordAuthentication=no \
             -o KbdInteractiveAuthentication=no \
+            -o PreferredAuthentications=publickey \
             -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=15 \
             -p "$SSH_PORT" \
             "${{ secrets.PROD_SSH_USER }}@$SSH_HOST" \
-            "echo 'SSH authentication succeeded.'"
+            "true"
+
+          SSH_EXIT_CODE=$?
+
+          set -e
+
+          echo "SSH exit code: $SSH_EXIT_CODE"
+
+          if [ "$SSH_EXIT_CODE" -ne 0 ]; then
+            echo "ERROR: SSH public-key authentication or remote command execution failed."
+            exit "$SSH_EXIT_CODE"
+          fi
+
+          echo "SSH authentication succeeded."
+          echo "SSH configuration completed."
 
           echo "SSH configuration completed."
 
