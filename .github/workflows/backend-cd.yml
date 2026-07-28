@@ -95,47 +95,83 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
           SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          SSH_HOST_KEY: ${{ secrets.PROD_SSH_HOST_KEY }}
         run: |
           set -Eeuo pipefail
 
           if [ -z "$SSH_HOST" ]; then
-            echo "PROD_SSH_HOST secret is empty."
+            echo "ERROR: PROD_SSH_HOST is empty."
             exit 1
           fi
 
           if [ -z "$SSH_PORT" ]; then
-            echo "PROD_SSH_PORT secret is empty."
+            echo "ERROR: PROD_SSH_PORT is empty."
             exit 1
           fi
 
           if [ -z "$SSH_PRIVATE_KEY" ]; then
-            echo "PROD_SSH_PRIVATE_KEY secret is empty."
+            echo "ERROR: PROD_SSH_PRIVATE_KEY is empty."
             exit 1
           fi
 
-          echo "SSH host is configured."
-          echo "SSH port: $SSH_PORT"
+          if [ -z "$SSH_HOST_KEY" ]; then
+            echo "ERROR: PROD_SSH_HOST_KEY is empty."
+            exit 1
+          fi
+
+          echo "SSH secrets are configured."
 
           install -m 700 -d "$HOME/.ssh"
 
-          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_PRIVATE_KEY" \
+            > "$HOME/.ssh/id_ed25519"
+
           chmod 600 "$HOME/.ssh/id_ed25519"
 
-          echo "Validating private key..."
-          ssh-keygen -y -f "$HOME/.ssh/id_ed25519" > /dev/null
+          echo "Validating deployment private key..."
 
-          echo "Checking SSH port connectivity..."
+          ssh-keygen \
+            -y \
+            -f "$HOME/.ssh/id_ed25519" \
+            > /dev/null
+
+          echo "Deployment private key is valid."
+
+          echo "Creating known_hosts with the registered server host key..."
+
+          printf '[%s]:%s %s\n' \
+            "$SSH_HOST" \
+            "$SSH_PORT" \
+            "$SSH_HOST_KEY" \
+            > "$HOME/.ssh/known_hosts"
+
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          echo "Validating known_hosts..."
+
+          ssh-keygen \
+            -F "[$SSH_HOST]:$SSH_PORT" \
+            -f "$HOME/.ssh/known_hosts" \
+            > /dev/null
+
+          echo "Checking SSH TCP connectivity..."
+
           timeout 15 bash -c \
             "cat < /dev/null > /dev/tcp/$SSH_HOST/$SSH_PORT"
 
-          echo "Collecting server host key..."
-          ssh-keyscan \
-            -T 15 \
-            -p "$SSH_PORT" \
-            -H "$SSH_HOST" \
-            >> "$HOME/.ssh/known_hosts"
+          echo "Testing SSH public-key authentication..."
 
-          chmod 600 "$HOME/.ssh/known_hosts"
+          ssh \
+            -i "$HOME/.ssh/id_ed25519" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o PasswordAuthentication=no \
+            -o KbdInteractiveAuthentication=no \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=15 \
+            -p "$SSH_PORT" \
+            "${{ secrets.PROD_SSH_USER }}@$SSH_HOST" \
+            "echo 'SSH authentication succeeded.'"
 
           echo "SSH configuration completed."
 
