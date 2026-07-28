@@ -37,6 +37,7 @@ public class SecurityConfig {
                     auth.requestMatchers("/api/chat/**").permitAll();
                     auth.requestMatchers("/ws/**").permitAll();
                     auth.requestMatchers("/api/friend/**").permitAll();
+                    auth.requestMatchers("/actuator/health").permitAll();
                     auth.anyRequest().authenticated();
                 })
                 .addFilterBefore(
